@@ -1,0 +1,5 @@
+error: extra comma in inline table, expected `=`
+ --> Cargo.toml:7:17
+  |
+7 | clap = { "4.6.1", features = ["derive"] }
+  |                 ^
