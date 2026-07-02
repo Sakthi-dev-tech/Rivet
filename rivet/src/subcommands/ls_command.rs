@@ -3,6 +3,7 @@ use std::{env, fs, ops::ControlFlow, path::Path};
 use owo_colors::OwoColorize;
 use termtree::Tree;
 
+use super::check_rivet::check_rivet_folder;
 
 fn print_collections(collections_path: &Path) -> std::io::Result<()> {
     let mut root = Tree::new("Your Collection".to_string());
@@ -44,24 +45,18 @@ fn print_collections(collections_path: &Path) -> std::io::Result<()> {
 }
 
 pub fn ls_function() -> ControlFlow<()> {
+    if let ControlFlow::Break(_) = check_rivet_folder() {
+        return ControlFlow::Break(());
+    }
+
     if let Ok(current_path) = env::current_dir() {
         let rivet_path = current_path.join(".rivet");
+        let collections_path = rivet_path.join("collections");
 
-        if rivet_path.exists() {
-            let collections_path = rivet_path.join("collections");
-
-            if !collections_path.exists() {
-                println!(".rivet is corrupted! Run {} again!", "init command".red());
-                return ControlFlow::Break(());
-            }
-
-            if let Err(err) = print_collections(&collections_path) {
-                println!("Error reading collections: {}", err.red());
-            }
-
-        } else {
-            println!(".rivet not found! Run the {} first!", "init command".red())
+        if let Err(err) = print_collections(&collections_path) {
+            println!("Error reading collections: {}", err.red());
         }
     };
+
     ControlFlow::Continue(())
 }
