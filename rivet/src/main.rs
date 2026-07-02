@@ -5,6 +5,8 @@ use clap::{Parser, Subcommand};
 
 use subcommands::{init_command, ls_command};
 
+use crate::subcommands::check_rivet::check_rivet_folder;
+
 #[derive(Parser, Debug)]
 #[command(
     author = "Sakthi-dev-tech",
@@ -22,7 +24,14 @@ enum Commands {
     /// Init a .rivet folder in your current folder
     Init,
     /// List all your saved requests
-    Ls
+    Ls,
+    /// Adds a new request in a saved collection
+    Add {
+        /// Name of your request
+        name: String,
+        /// Collection where you want to add the request in
+        collection: String
+    }
 }
 
 fn main() {
@@ -34,7 +43,14 @@ fn main() {
         },
 
         Commands::Ls => {
-            if let ControlFlow::Break(_) = ls_command::ls_function() {
+            if let ControlFlow::Break(_) = check_rivet_folder() {
+                return;
+            }
+            ls_command::ls_function();
+        },
+
+        Commands::Add { name, collection } => {
+            if let ControlFlow::Break(_) = check_rivet_folder() {
                 return;
             }
         }
