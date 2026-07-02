@@ -1,8 +1,9 @@
 mod subcommands;
 
+use std::ops::ControlFlow;
 use clap::{Parser, Subcommand};
 
-use crate::subcommands::init_function;
+use subcommands::{init_command, ls_command};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -13,13 +14,15 @@ use crate::subcommands::init_function;
 )]
 struct Cli {
     #[command(subcommand)]
-    cmd: Commands
+    cmd: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Init a .rivet folder in your current folder
-    Init 
+    Init,
+    /// List all your saved requests
+    Ls
 }
 
 fn main() {
@@ -27,8 +30,13 @@ fn main() {
 
     match &cli.cmd {
         Commands::Init => {
-            init_function();
+            init_command::init_function();
+        },
+
+        Commands::Ls => {
+            if let ControlFlow::Break(_) = ls_command::ls_function() {
+                return;
+            }
         }
     }
 }
-
