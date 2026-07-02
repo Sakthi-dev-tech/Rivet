@@ -1,7 +1,7 @@
-use std::{env, fs, path::PathBuf};
+use std::{env, fs};
 use owo_colors::OwoColorize;
 
-pub fn init_function(path: &Option<PathBuf>) {
+pub fn init_function() {
     let current_path = match env::current_dir() {
         Ok(path) => path,
         Err(err) => {
@@ -9,11 +9,7 @@ pub fn init_function(path: &Option<PathBuf>) {
         }
     };
 
-    let rivet_path = match path {
-        Some(path) => current_path.join(path),
-        None => current_path
-    };
-    let rivet_path = rivet_path.join(".rivet");
+    let rivet_path = current_path.join(".rivet");
 
     let dirs = [
         rivet_path.join("requests/"),

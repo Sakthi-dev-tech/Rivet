@@ -1,6 +1,5 @@
 mod subcommands;
 
-use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 use crate::subcommands::init_function;
@@ -20,19 +19,15 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Init a .rivet folder in your current folder
-    Init {
-        /// Init .rivet folder in a custom path
-        #[arg(short, long)]
-        path: Option<PathBuf>,
-    },
+    Init 
 }
 
 fn main() {
     let cli = Cli::parse();
 
     match &cli.cmd {
-        Commands::Init { path } => {
-            init_function(path);
+        Commands::Init => {
+            init_function();
         }
     }
 }
