@@ -19,12 +19,14 @@ pub fn add_function(name: &String, collection: &String) {
 
         if let Err(error) = fs::create_dir_all(&collection_path) {
             println!("Something went wrong when creating collection: {}", error.red());
+            return;
         };
 
         if let Err(error) = fs::write(collection_path.join(format!("{}.toml", name)), DEFAULT_REQUEST_TOML) {
             println!("Something went wrong when making file: {}", error.red());
+            return;
         };
     };
 
-    println!("{}", "Successfully created your API request file!".green())
+    println!("{}", "Successfully created your TOML file!".green())
 }

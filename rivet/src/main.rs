@@ -3,7 +3,7 @@ mod subcommands;
 use std::ops::ControlFlow;
 use clap::{Parser, Subcommand};
 
-use subcommands::{init_command, ls_command, add_command};
+use subcommands::{init_command, ls_command, add_command, remove_command};
 
 use crate::subcommands::check_rivet::check_rivet_folder;
 
@@ -25,13 +25,27 @@ enum Commands {
     Init,
     /// List all your saved requests
     Ls,
+
     /// Adds a new request in a saved collection
+    #[command(visible_alias = "a")]
     Add {
         /// Name of your request
         #[arg(short, long)]
         name: String,
 
         /// Collection where you want to add the request in
+        #[arg(short, long)]
+        collection: String
+    },
+
+    /// Removes a request in a saved collection
+    #[command(visible_alias = "rm")]
+    Remove {
+        /// Name of your request to be deleted
+        #[arg(short, long)]
+        name: String,
+
+        /// Collection where you want to remove the request from
         #[arg(short, long)]
         collection: String
     }
@@ -59,6 +73,14 @@ fn main() {
             }
 
             add_command::add_function(name, collection);
+        }
+
+        Commands::Remove { name, collection } => {
+            if let ControlFlow::Break(_) = check_rivet_folder() {
+                return;
+            }
+
+            remove_command::remove_function(name, collection);
         }
     }
 }
