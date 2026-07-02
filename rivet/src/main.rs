@@ -3,7 +3,7 @@ mod subcommands;
 use std::ops::ControlFlow;
 use clap::{Parser, Subcommand};
 
-use subcommands::{init_command, ls_command};
+use subcommands::{init_command, ls_command, add_command};
 
 use crate::subcommands::check_rivet::check_rivet_folder;
 
@@ -28,8 +28,11 @@ enum Commands {
     /// Adds a new request in a saved collection
     Add {
         /// Name of your request
+        #[arg(short, long)]
         name: String,
+
         /// Collection where you want to add the request in
+        #[arg(short, long)]
         collection: String
     }
 }
@@ -46,6 +49,7 @@ fn main() {
             if let ControlFlow::Break(_) = check_rivet_folder() {
                 return;
             }
+
             ls_command::ls_function();
         },
 
@@ -53,6 +57,9 @@ fn main() {
             if let ControlFlow::Break(_) = check_rivet_folder() {
                 return;
             }
+
+            add_command::add_function(name, collection);
         }
     }
 }
+
