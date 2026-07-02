@@ -3,7 +3,7 @@ mod subcommands;
 use std::ops::ControlFlow;
 use clap::{Parser, Subcommand};
 
-use subcommands::{init_command, ls_command, add_command, remove_command};
+use subcommands::{init_command, ls_command, add_command, remove_command, send_command};
 
 use crate::subcommands::check_rivet::check_rivet_folder;
 
@@ -48,6 +48,18 @@ enum Commands {
         /// Collection where you want to remove the request from
         #[arg(short, long)]
         collection: String
+    },
+
+    /// Sends your saved request
+    #[command(visible_alias = "s")]
+    Send {
+        /// Name of your request to be used
+        #[arg(short, long)]
+        name: String,
+
+        /// Collection where the request is in
+        #[arg(short, long)]
+        collection: String
     }
 }
 
@@ -81,6 +93,14 @@ fn main() {
             }
 
             remove_command::remove_function(name, collection);
+        }
+
+        Commands::Send { name, collection } => {
+            if let ControlFlow::Break(_) = check_rivet_folder() {
+                return;
+            }
+
+            send_command::send_function(name, collection);
         }
     }
 }

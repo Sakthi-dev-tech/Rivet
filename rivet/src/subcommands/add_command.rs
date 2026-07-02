@@ -10,7 +10,7 @@ Authorization = ""
 
 [body]
 type = "json"
-content = ""
+content = """{}"""
 "#;
 
 pub fn add_function(name: &String, collection: &String) {
