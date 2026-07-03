@@ -6,6 +6,7 @@ use std::{collections::HashMap, env, fs};
 struct RequestConfig {
     method: String,
     url: String,
+    auth: Option<AuthConfig>,
     headers: Option<HashMap<String, String>>,
     body: Option<RequestBody>,
 }
@@ -16,6 +17,19 @@ struct RequestBody {
     body_type: String,
     content: String,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+enum AuthConfig {
+    Basic {
+        username: String,
+        password: Option<String>, // Make optional if some APIs allow empty passwords
+    },
+    Bearer {
+        token: String,
+    },
+}
+
 
 pub fn send_function(name: &String, collection: &String) {
     if let Ok(current_path) = env::current_dir() {
@@ -33,6 +47,7 @@ pub fn send_function(name: &String, collection: &String) {
             return;
         }
 
+        // Convert file content to raw string
         let file_content = match fs::read_to_string(&file_path) {
             Ok(content) => content,
             Err(error) => {
@@ -41,6 +56,7 @@ pub fn send_function(name: &String, collection: &String) {
             }
         };
 
+        // Convert the raw string content of file to toml structure for Rust to read
         let request_config: RequestConfig = match toml::from_str(&file_content) {
             Ok(config) => config,
             Err(error) => {
@@ -65,6 +81,18 @@ pub fn send_function(name: &String, collection: &String) {
 
         let client = reqwest::blocking::Client::new();
         let mut request = client.request(method, &request_config.url);
+
+        if let Some(auth_config) = request_config.auth {
+            request = match auth_config {
+                AuthConfig::Basic { username, password } => {
+                    request.basic_auth(username, password)
+                },
+
+                AuthConfig::Bearer { token } => {
+                    request.bearer_auth(token)
+                }
+            }
+        }
 
         if let Some(headers) = request_config.headers {
             for (key, value) in headers {

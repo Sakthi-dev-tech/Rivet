@@ -4,12 +4,30 @@ use owo_colors::OwoColorize;
 const DEFAULT_REQUEST_TOML: &str = r#"method = ""
 url = ""
 
+[params]
+# query = "10"
+# sort = "desc"
+# filter = "active"
+
+# Choose one authentication method below (uncomment to use):
+
+# --- Bearer Auth ---
+# [auth]
+# type = "bearer"
+# token = "your_token_here"
+
+# --- Basic Auth ---
+# [auth]
+# type = "basic"
+# username = "admin"
+# password = "password123"
+
 [headers]
-Content-Type = ""
-Authorization = ""
+# Content-Type = ""
+# Authorization = ""
+# X-API-Key = ""
 
 [body]
-type = "json"
 content = """{}"""
 "#;
 
