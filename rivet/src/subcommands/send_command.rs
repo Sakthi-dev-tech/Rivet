@@ -6,6 +6,7 @@ use std::{collections::HashMap, env, fs};
 struct RequestConfig {
     method: String,
     url: String,
+    params: Option<HashMap<String, String>>,
     auth: Option<AuthConfig>,
     headers: Option<HashMap<String, String>>,
     body: Option<RequestBody>,
@@ -13,8 +14,6 @@ struct RequestConfig {
 
 #[derive(Debug, Deserialize)]
 struct RequestBody {
-    #[serde(rename = "type")]
-    body_type: String,
     content: String,
 }
 
@@ -23,13 +22,12 @@ struct RequestBody {
 enum AuthConfig {
     Basic {
         username: String,
-        password: Option<String>, // Make optional if some APIs allow empty passwords
+        password: Option<String>, // Optional if some APIs allow empty passwords
     },
     Bearer {
         token: String,
     },
 }
-
 
 pub fn send_function(name: &String, collection: &String) {
     if let Ok(current_path) = env::current_dir() {
@@ -79,18 +77,34 @@ pub fn send_function(name: &String, collection: &String) {
             }
         };
 
+        let mut request_url = request_config.url.clone();
+
+        if let Some(params) = &request_config.params {
+            if !params.is_empty() {
+                let mut url = match reqwest::Url::parse(&request_config.url) {
+                    Ok(url) => url,
+                    Err(error) => {
+                        println!("Invalid URL: {}", error.red());
+                        return;
+                    }
+                };
+
+                for (key, value) in params {
+                    url.query_pairs_mut().append_pair(key, value);
+                }
+
+                request_url = url.to_string();
+            }
+        }
+
         let client = reqwest::blocking::Client::new();
-        let mut request = client.request(method, &request_config.url);
+        let mut request = client.request(method, &request_url);
 
         if let Some(auth_config) = request_config.auth {
             request = match auth_config {
-                AuthConfig::Basic { username, password } => {
-                    request.basic_auth(username, password)
-                },
+                AuthConfig::Basic { username, password } => request.basic_auth(username, password),
 
-                AuthConfig::Bearer { token } => {
-                    request.bearer_auth(token)
-                }
+                AuthConfig::Bearer { token } => request.bearer_auth(token),
             }
         }
 
@@ -104,9 +118,7 @@ pub fn send_function(name: &String, collection: &String) {
 
         if let Some(body) = request_config.body {
             if !body.content.trim().is_empty() && request_config.method.to_uppercase() != "GET" {
-                request = match body.body_type.as_str() {
-                    _ => request.body(body.content),
-                }
+                request = request.body(body.content);
             }
         }
 
