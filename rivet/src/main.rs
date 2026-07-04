@@ -1,5 +1,6 @@
 mod actions;
 mod subcommands;
+mod types;
 
 use clap::{Parser, Subcommand};
 use std::process::ExitCode;
