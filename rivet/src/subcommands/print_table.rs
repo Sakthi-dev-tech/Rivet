@@ -67,6 +67,13 @@ pub fn print_response_table(
 
 pub fn print_error_table(method: &str, url: &str, duration: Duration, error: &reqwest::Error) {
     let mut table = Table::new();
+
+    let error_message = if error.is_timeout() {
+        "Request timed out. Increase [config] timeout or check the server.".to_string()
+    } else {
+        error.to_string()
+    };
+
     table
         .load_preset(UTF8_FULL)
         .set_content_arrangement(ContentArrangement::Dynamic)
@@ -84,8 +91,7 @@ pub fn print_error_table(method: &str, url: &str, duration: Duration, error: &re
             Cell::new("Duration"),
             Cell::new(format_duration(duration)),
         ])
-        .add_row(vec![Cell::new("Error"), Cell::new(error.to_string())]);
+        .add_row(vec![Cell::new("Error"), Cell::new(error_message)]);
 
     println!("{table}");
 }
-
