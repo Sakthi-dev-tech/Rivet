@@ -20,7 +20,7 @@ url = ""
 # [auth]
 # type = "basic"
 # username = "admin"
-# password = "password123"
+# password = "{{AUTH_PASSWORD}}" # this will be your environment variable in .env file
 
 [headers]
 # Content-Type = ""
@@ -29,6 +29,9 @@ url = ""
 
 [body]
 content = """{}"""
+
+[config]
+timeout = 30
 "#;
 
 pub fn add_function(name: &String, collection: &String) {

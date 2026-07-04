@@ -3,7 +3,9 @@ use super::print_table::{print_error_table, print_response_table};
 use owo_colors::OwoColorize;
 use regex::Regex;
 use serde::Deserialize;
-use std::{collections::HashMap, env, fs};
+use std::{collections::HashMap, env, fs, time::Duration};
+
+const REQUEST_TIMEOUT_SECS: u64 = 30;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -14,6 +16,7 @@ struct RequestConfig {
     auth: Option<AuthConfig>,
     headers: Option<HashMap<String, String>>,
     body: Option<RequestBody>,
+    config: Option<Config>
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,6 +34,11 @@ enum AuthConfig {
     Bearer {
         token: String,
     },
+}
+
+#[derive(Debug, Deserialize)]
+struct Config {
+    timeout: u64
 }
 
 fn resolve_env_placeholders(value: &str) -> Result<String, String> {
@@ -184,7 +192,23 @@ pub fn send_function(name: &String, collection: &String) {
             }
         }
 
-        let client = reqwest::blocking::Client::new();
+        let timeout_secs = request_config
+            .config
+            .as_ref()
+            .map(|config| u64::from(config.timeout))
+            .unwrap_or(REQUEST_TIMEOUT_SECS);
+
+        let client = match reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(timeout_secs))
+            .build()
+        {
+            Ok(client) => client,
+            Err(error) => {
+                println!("Failed to create HTTP client: {}", error.red());
+                return;
+            }
+        };
+
         let mut request = client.request(method, &request_url);
 
         if let Some(auth_config) = request_config.auth {
