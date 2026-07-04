@@ -3,8 +3,7 @@ mod subcommands;
 use std::ops::ControlFlow;
 use clap::{Parser, Subcommand};
 
-use subcommands::{init_command, ls_command, add_command, remove_command, send_command};
-use crate::subcommands::check_rivet::check_rivet_folder;
+use subcommands::{init_command, ls_command, add_command, remove_command, send_command, check_rivet::check_rivet_folder};
 
 #[derive(Parser, Debug)]
 #[command(

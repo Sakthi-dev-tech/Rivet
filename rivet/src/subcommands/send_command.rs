@@ -6,6 +6,7 @@ use serde::Deserialize;
 use std::{collections::HashMap, env, fs};
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RequestConfig {
     method: String,
     url: String,
