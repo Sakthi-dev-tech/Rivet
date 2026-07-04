@@ -1,9 +1,12 @@
+mod actions;
 mod subcommands;
 
-use std::{ops::ControlFlow, process::ExitCode};
 use clap::{Parser, Subcommand};
+use std::process::ExitCode;
+use owo_colors::OwoColorize;
 
-use subcommands::{init_command, ls_command, add_command, remove_command, send_command, check_rivet::check_rivet_folder};
+use actions::{add_action, check_rivet::check_rivet_folder, init_action, remove_action};
+use subcommands::{ls_command, send_command};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -33,7 +36,7 @@ enum Commands {
 
         /// Collection where you want to add the request in
         #[arg(short, long)]
-        collection: String
+        collection: String,
     },
 
     /// Removes a request in a saved collection
@@ -45,7 +48,7 @@ enum Commands {
 
         /// Collection where you want to remove the request from
         #[arg(short, long)]
-        collection: String
+        collection: String,
     },
 
     /// Sends your saved request
@@ -57,55 +60,37 @@ enum Commands {
 
         /// Collection where the request is in
         #[arg(short, long)]
-        collection: String
-    }
+        collection: String,
+    },
 }
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
 
+    let print_error = |error: String| println!("{}", error.red());
+
     let result = match &cli.cmd {
-        Commands::Init => {
-            init_command::init_function()
-        },
+        Commands::Init => init_action::init_function().map_err(print_error),
 
-        Commands::Ls => {
-            if let ControlFlow::Break(_) = check_rivet_folder() {
-                return ExitCode::FAILURE;
-            }
+        Commands::Ls => check_rivet_folder()
+            .map_err(print_error)
+            .and_then(|_| ls_command::ls_function()),
 
-            ls_command::ls_function()
-        },
+        Commands::Add { name, collection } => check_rivet_folder()
+            .map_err(print_error)
+            .and_then(|_| add_action::add_function(name, collection).map_err(print_error)),
 
-        Commands::Add { name, collection } => {
-            if let ControlFlow::Break(_) = check_rivet_folder() {
-                return ExitCode::FAILURE;
-            }
+        Commands::Remove { name, collection } => check_rivet_folder()
+            .map_err(print_error)
+            .and_then(|_| remove_action::remove_function(name, collection).map_err(print_error)),
 
-            add_command::add_function(name, collection)
-        }
-
-        Commands::Remove { name, collection } => {
-            if let ControlFlow::Break(_) = check_rivet_folder() {
-                return ExitCode::FAILURE;
-            }
-
-            remove_command::remove_function(name, collection)
-        }
-
-        Commands::Send { name, collection } => {
-            if let ControlFlow::Break(_) = check_rivet_folder() {
-                return ExitCode::FAILURE;
-            }
-
-            send_command::send_function(name, collection)
-        }
-
+        Commands::Send { name, collection } => check_rivet_folder()
+            .map_err(print_error)
+            .and_then(|_| send_command::send_function(name, collection).map_err(print_error)),
     };
 
-    if result.is_ok() {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::FAILURE
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(()) => ExitCode::FAILURE,
     }
 }

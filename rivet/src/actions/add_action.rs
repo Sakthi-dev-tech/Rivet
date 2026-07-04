@@ -1,5 +1,5 @@
-use std::{env, fs};
 use owo_colors::OwoColorize;
+use std::{env, fs};
 
 const DEFAULT_REQUEST_TOML: &str = r#"method = ""
 url = ""
@@ -34,22 +34,28 @@ content = """{}"""
 timeout = 30
 "#;
 
-pub fn add_function(name: &String, collection: &String) -> Result<(), ()> {
+pub fn add_function(name: &String, collection: &String) -> Result<(), String> {
     if let Ok(current_path) = env::current_dir() {
         let collection_path = current_path.join(format!(".rivet/collections/{}", collection));
 
         if let Err(error) = fs::create_dir_all(&collection_path) {
-            println!("Something went wrong when creating collection: {}", error.red());
-            return Err(());
+            return Err(format!(
+                "Something went wrong when creating collection: {}",
+                error.red()
+            ));
         };
 
-        if let Err(error) = fs::write(collection_path.join(format!("{}.toml", name)), DEFAULT_REQUEST_TOML) {
-            println!("Something went wrong when making file: {}", error.red());
-            return Err(());
+        if let Err(error) = fs::write(
+            collection_path.join(format!("{}.toml", name)),
+            DEFAULT_REQUEST_TOML,
+        ) {
+            return Err(format!(
+                "Something went wrong when making file: {}",
+                error.red()
+            ));
         };
     } else {
-        println!("{}", "Error getting current directory".red());
-        return Err(());
+        return Err(format!("{}", "Error getting current directory".red()));
     };
 
     println!("{}", "Successfully created your TOML file!".green());

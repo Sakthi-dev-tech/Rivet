@@ -1,4 +1,4 @@
-use std::{env, ops::ControlFlow, path::Path};
+use std::{env, path::Path};
 
 use owo_colors::OwoColorize;
 
@@ -10,20 +10,21 @@ fn is_file(path: &Path) -> bool {
     path.exists() && path.is_file()
 }
 
-pub fn check_rivet_folder() -> ControlFlow<()> {
+pub fn check_rivet_folder() -> Result<(), String> {
     let current_path = match env::current_dir() {
         Ok(path) => path,
         Err(err) => {
-            println!("Error getting current directory: {}", err.red());
-            return ControlFlow::Break(());
+            return Err(format!("Error getting current directory: {}", err.red()));
         }
     };
 
     let rivet_path = current_path.join(".rivet");
 
     if !is_dir(&rivet_path) {
-        println!(".rivet not found! Run the {} first!", "init command".red());
-        return ControlFlow::Break(());
+        return Err(format!(
+            ".rivet not found! Run the {} first!",
+            "init command".red()
+        ));
     }
 
     let required_dirs = [rivet_path.join("collections"), rivet_path.join("history")];
@@ -33,9 +34,11 @@ pub fn check_rivet_folder() -> ControlFlow<()> {
     let has_missing_file = required_files.iter().any(|path| !is_file(path));
 
     if has_missing_dir || has_missing_file {
-        println!(".rivet is corrupted! Run {} again!", "init command".red());
-        return ControlFlow::Break(());
+        return Err(format!(
+            ".rivet is corrupted! Run {} again!",
+            "init command".red()
+        ));
     }
 
-    ControlFlow::Continue(())
+    Ok(())
 }

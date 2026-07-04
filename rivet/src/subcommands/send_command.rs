@@ -16,7 +16,7 @@ struct RequestConfig {
     auth: Option<AuthConfig>,
     headers: Option<HashMap<String, String>>,
     body: Option<RequestBody>,
-    config: Option<Config>
+    config: Option<Config>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,7 +38,7 @@ enum AuthConfig {
 
 #[derive(Debug, Deserialize)]
 struct Config {
-    timeout: u64
+    timeout: u64,
 }
 
 fn resolve_env_placeholders(value: &str) -> Result<String, String> {
@@ -109,38 +109,34 @@ fn resolve_request_placeholders(request_config: &mut RequestConfig) -> Result<()
     Ok(())
 }
 
-pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
+pub fn send_function(name: &String, collection: &String) -> Result<(), String> {
     if let Ok(current_path) = env::current_dir() {
         let env_path = current_path.join(".env");
 
         // Check if we can load the dotenv file if it exists
         if env_path.exists() {
             if let Err(error) = dotenvy::from_path(&env_path) {
-                println!("Failed to load .env file: {}", error.red());
-                return Err(());
+                return Err(format!("Failed to load .env file: {}", error.red()));
             }
         }
 
         let collection_path = current_path.join(format!(".rivet/collections/{}", collection));
 
         if !collection_path.exists() {
-            println!("{}", "Collection not found".red());
-            return Err(());
+            return Err(format!("{}", "Collection not found".red()));
         }
 
         let file_path = collection_path.join(format!("{}.toml", name));
 
         if !file_path.exists() {
-            println!("{}", "TOML file is not found!".red());
-            return Err(());
+            return Err(format!("{}", "TOML file is not found!".red()));
         }
 
         // Convert file content to raw string
         let file_content = match fs::read_to_string(&file_path) {
             Ok(content) => content,
             Err(error) => {
-                println!("Failed to read TOML file!: {}", error.red());
-                return Err(());
+                return Err(format!("Failed to read TOML file!: {}", error.red()));
             }
         };
 
@@ -148,14 +144,12 @@ pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
         let mut request_config: RequestConfig = match toml::from_str(&file_content) {
             Ok(config) => config,
             Err(error) => {
-                println!("Failed to parse TOML file: {}", error.red());
-                return Err(());
+                return Err(format!("Failed to parse TOML file: {}", error.red()));
             }
         };
 
         if let Err(error) = resolve_request_placeholders(&mut request_config) {
-            println!("{}", error.red());
-            return Err(());
+            return Err(format!("{}", error.red()));
         }
 
         let method = match request_config.method.to_uppercase().as_str() {
@@ -167,8 +161,7 @@ pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
             "HEAD" => reqwest::Method::HEAD,
             "OPTIONS" => reqwest::Method::OPTIONS,
             method => {
-                println!("Invalid HTTP method: {}", method.red());
-                return Err(());
+                return Err(format!("Invalid HTTP method: {}", method.red()));
             }
         };
 
@@ -179,8 +172,7 @@ pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
                 let mut url = match reqwest::Url::parse(&request_config.url) {
                     Ok(url) => url,
                     Err(error) => {
-                        println!("Invalid URL: {}", error.red());
-                        return Err(());
+                        return Err(format!("Invalid URL: {}", error.red()));
                     }
                 };
 
@@ -204,8 +196,7 @@ pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
         {
             Ok(client) => client,
             Err(error) => {
-                println!("Failed to create HTTP client: {}", error.red());
-                return Err(());
+                return Err(format!("Failed to create HTTP client: {}", error.red()));
             }
         };
 
@@ -270,9 +261,7 @@ pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
                         if status.is_success() {
                             println!("{}", formatted_text.green());
                         } else {
-                            println!("Request failed with status code: {}", status.red());
-                            println!("{}", formatted_text);
-                            return Err(());
+                            return Err(format!("{}", formatted_text));
                         }
                     }
 
@@ -280,7 +269,7 @@ pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
                         let elapsed = started_at.elapsed();
 
                         print_error_table(&request_config.method, &final_url, elapsed, &error);
-                        return Err(());
+                        return Err(error.to_string());
                     }
                 }
             }
@@ -289,12 +278,11 @@ pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
                 let elapsed = started_at.elapsed();
 
                 print_error_table(&request_config.method, &request_url, elapsed, &error);
-                return Err(());
+                return Err(error.to_string());
             }
         };
     } else {
-        println!("{}", "Error getting current directory".red());
-        return Err(());
+        return Err(format!("{}", "Error getting current directory".red()));
     };
 
     Ok(())

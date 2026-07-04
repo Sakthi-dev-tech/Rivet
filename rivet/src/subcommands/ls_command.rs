@@ -37,7 +37,7 @@ fn print_collections(collections_path: &Path) -> std::io::Result<()> {
             root.push(folder_tree);
         }
     }
-    
+
     println!("{root}");
     Ok(())
 }
