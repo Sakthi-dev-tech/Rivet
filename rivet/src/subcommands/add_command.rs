@@ -34,20 +34,24 @@ content = """{}"""
 timeout = 30
 "#;
 
-pub fn add_function(name: &String, collection: &String) {
+pub fn add_function(name: &String, collection: &String) -> Result<(), ()> {
     if let Ok(current_path) = env::current_dir() {
         let collection_path = current_path.join(format!(".rivet/collections/{}", collection));
 
         if let Err(error) = fs::create_dir_all(&collection_path) {
             println!("Something went wrong when creating collection: {}", error.red());
-            return;
+            return Err(());
         };
 
         if let Err(error) = fs::write(collection_path.join(format!("{}.toml", name)), DEFAULT_REQUEST_TOML) {
             println!("Something went wrong when making file: {}", error.red());
-            return;
+            return Err(());
         };
+    } else {
+        println!("{}", "Error getting current directory".red());
+        return Err(());
     };
 
-    println!("{}", "Successfully created your TOML file!".green())
+    println!("{}", "Successfully created your TOML file!".green());
+    Ok(())
 }

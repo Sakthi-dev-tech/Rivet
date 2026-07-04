@@ -1,6 +1,6 @@
 mod subcommands;
 
-use std::ops::ControlFlow;
+use std::{ops::ControlFlow, process::ExitCode};
 use clap::{Parser, Subcommand};
 
 use subcommands::{init_command, ls_command, add_command, remove_command, send_command, check_rivet::check_rivet_folder};
@@ -61,45 +61,51 @@ enum Commands {
     }
 }
 
-fn main() {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    match &cli.cmd {
+    let result = match &cli.cmd {
         Commands::Init => {
-            init_command::init_function();
+            init_command::init_function()
         },
 
         Commands::Ls => {
             if let ControlFlow::Break(_) = check_rivet_folder() {
-                return;
+                return ExitCode::FAILURE;
             }
 
-            ls_command::ls_function();
+            ls_command::ls_function()
         },
 
         Commands::Add { name, collection } => {
             if let ControlFlow::Break(_) = check_rivet_folder() {
-                return;
+                return ExitCode::FAILURE;
             }
 
-            add_command::add_function(name, collection);
+            add_command::add_function(name, collection)
         }
 
         Commands::Remove { name, collection } => {
             if let ControlFlow::Break(_) = check_rivet_folder() {
-                return;
+                return ExitCode::FAILURE;
             }
 
-            remove_command::remove_function(name, collection);
+            remove_command::remove_function(name, collection)
         }
 
         Commands::Send { name, collection } => {
             if let ControlFlow::Break(_) = check_rivet_folder() {
-                return;
+                return ExitCode::FAILURE;
             }
 
-            send_command::send_function(name, collection);
+            send_command::send_function(name, collection)
         }
+
+    };
+
+    if result.is_ok() {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
     }
 }
-

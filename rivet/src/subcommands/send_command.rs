@@ -109,7 +109,7 @@ fn resolve_request_placeholders(request_config: &mut RequestConfig) -> Result<()
     Ok(())
 }
 
-pub fn send_function(name: &String, collection: &String) {
+pub fn send_function(name: &String, collection: &String) -> Result<(), ()> {
     if let Ok(current_path) = env::current_dir() {
         let env_path = current_path.join(".env");
 
@@ -117,7 +117,7 @@ pub fn send_function(name: &String, collection: &String) {
         if env_path.exists() {
             if let Err(error) = dotenvy::from_path(&env_path) {
                 println!("Failed to load .env file: {}", error.red());
-                return;
+                return Err(());
             }
         }
 
@@ -125,14 +125,14 @@ pub fn send_function(name: &String, collection: &String) {
 
         if !collection_path.exists() {
             println!("{}", "Collection not found".red());
-            return;
+            return Err(());
         }
 
         let file_path = collection_path.join(format!("{}.toml", name));
 
         if !file_path.exists() {
             println!("{}", "TOML file is not found!".red());
-            return;
+            return Err(());
         }
 
         // Convert file content to raw string
@@ -140,7 +140,7 @@ pub fn send_function(name: &String, collection: &String) {
             Ok(content) => content,
             Err(error) => {
                 println!("Failed to read TOML file!: {}", error.red());
-                return;
+                return Err(());
             }
         };
 
@@ -149,13 +149,13 @@ pub fn send_function(name: &String, collection: &String) {
             Ok(config) => config,
             Err(error) => {
                 println!("Failed to parse TOML file: {}", error.red());
-                return;
+                return Err(());
             }
         };
 
         if let Err(error) = resolve_request_placeholders(&mut request_config) {
             println!("{}", error.red());
-            return;
+            return Err(());
         }
 
         let method = match request_config.method.to_uppercase().as_str() {
@@ -168,7 +168,7 @@ pub fn send_function(name: &String, collection: &String) {
             "OPTIONS" => reqwest::Method::OPTIONS,
             method => {
                 println!("Invalid HTTP method: {}", method.red());
-                return;
+                return Err(());
             }
         };
 
@@ -180,7 +180,7 @@ pub fn send_function(name: &String, collection: &String) {
                     Ok(url) => url,
                     Err(error) => {
                         println!("Invalid URL: {}", error.red());
-                        return;
+                        return Err(());
                     }
                 };
 
@@ -205,7 +205,7 @@ pub fn send_function(name: &String, collection: &String) {
             Ok(client) => client,
             Err(error) => {
                 println!("Failed to create HTTP client: {}", error.red());
-                return;
+                return Err(());
             }
         };
 
@@ -272,6 +272,7 @@ pub fn send_function(name: &String, collection: &String) {
                         } else {
                             println!("Request failed with status code: {}", status.red());
                             println!("{}", formatted_text);
+                            return Err(());
                         }
                     }
 
@@ -279,6 +280,7 @@ pub fn send_function(name: &String, collection: &String) {
                         let elapsed = started_at.elapsed();
 
                         print_error_table(&request_config.method, &final_url, elapsed, &error);
+                        return Err(());
                     }
                 }
             }
@@ -287,7 +289,13 @@ pub fn send_function(name: &String, collection: &String) {
                 let elapsed = started_at.elapsed();
 
                 print_error_table(&request_config.method, &request_url, elapsed, &error);
+                return Err(());
             }
         };
+    } else {
+        println!("{}", "Error getting current directory".red());
+        return Err(());
     };
+
+    Ok(())
 }

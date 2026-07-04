@@ -42,13 +42,19 @@ fn print_collections(collections_path: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn ls_function() {
+pub fn ls_function() -> Result<(), ()> {
     if let Ok(current_path) = env::current_dir() {
         let rivet_path = current_path.join(".rivet");
         let collections_path = rivet_path.join("collections");
 
         if let Err(err) = print_collections(&collections_path) {
             println!("Error reading collections: {}", err.red());
+            return Err(());
         }
+    } else {
+        println!("{}", "Error getting current directory".red());
+        return Err(());
     };
+
+    Ok(())
 }

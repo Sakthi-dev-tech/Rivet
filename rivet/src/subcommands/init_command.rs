@@ -1,11 +1,12 @@
 use std::{env, fs};
 use owo_colors::OwoColorize;
 
-pub fn init_function() {
+pub fn init_function() -> Result<(), ()> {
     let current_path = match env::current_dir() {
         Ok(path) => path,
         Err(err) => {
-            panic!("Error getting current directory: {}", err.red());
+            println!("Error getting current directory: {}", err.red());
+            return Err(());
         }
     };
 
@@ -23,15 +24,19 @@ pub fn init_function() {
     for dir in dirs {
         if let Err(err) = fs::create_dir_all(&dir) {
             println!("Error creating {}: {}", dir.display(), err.bright_red());
+            return Err(());
         }
     }
 
     for file in files {
         if !file.exists() {
-            fs::write(&file, "")
-                .expect("Error creating file!");
+            if let Err(err) = fs::write(&file, "") {
+                println!("Error creating {}: {}", file.display(), err.red());
+                return Err(());
+            }
         }
     }
 
-    println!("{}", "Initialised successfully!".green())
+    println!("{}", "Initialised successfully!".green());
+    Ok(())
 }
