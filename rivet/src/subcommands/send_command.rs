@@ -1,8 +1,9 @@
-use super::print_table::{print_response_table, print_error_table};
+use super::print_table::{print_error_table, print_response_table};
 
-use std::{collections::HashMap, env, fs};
-use serde::Deserialize;
 use owo_colors::OwoColorize;
+use regex::Regex;
+use serde::Deserialize;
+use std::{collections::HashMap, env, fs};
 
 #[derive(Debug, Deserialize)]
 struct RequestConfig {
@@ -31,8 +32,86 @@ enum AuthConfig {
     },
 }
 
+fn resolve_env_placeholders(value: &str) -> Result<String, String> {
+    let placeholder_regex =
+        Regex::new(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}").map_err(|err| err.to_string())?;
+
+    let mut resolved = String::new();
+    let mut last_end_idx = 0;
+
+    for capture in placeholder_regex.captures_iter(value) {
+        let placeholder = capture
+            .get(0)
+            .ok_or_else(|| "Invalid environment placeholder".to_string())?;
+
+        let key = capture
+            .get(1)
+            .ok_or_else(|| "Invalid environment placeholder".to_string())?
+            .as_str();
+
+        let env_value =
+            env::var(key).map_err(|_| format!("Missing environment variable: {}", key))?;
+
+        resolved.push_str(&value[last_end_idx..placeholder.start()]);
+        resolved.push_str(&env_value);
+        last_end_idx = placeholder.end();
+    }
+    resolved.push_str(&value[last_end_idx..]);
+
+    Ok(resolved)
+}
+
+fn resolve_request_placeholders(request_config: &mut RequestConfig) -> Result<(), String> {
+    request_config.method = resolve_env_placeholders(&request_config.method)?;
+    request_config.url = resolve_env_placeholders(&request_config.url)?;
+
+    if let Some(params) = &mut request_config.params {
+        for value in params.values_mut() {
+            *value = resolve_env_placeholders(value)?;
+        }
+    }
+
+    if let Some(auth_config) = &mut request_config.auth {
+        match auth_config {
+            AuthConfig::Basic { username, password } => {
+                *username = resolve_env_placeholders(username)?;
+
+                if let Some(password) = password {
+                    *password = resolve_env_placeholders(password)?;
+                }
+            }
+
+            AuthConfig::Bearer { token } => {
+                *token = resolve_env_placeholders(token)?;
+            }
+        }
+    }
+
+    if let Some(headers) = &mut request_config.headers {
+        for value in headers.values_mut() {
+            *value = resolve_env_placeholders(value)?;
+        }
+    }
+
+    if let Some(body) = &mut request_config.body {
+        body.content = resolve_env_placeholders(&body.content)?;
+    }
+
+    Ok(())
+}
+
 pub fn send_function(name: &String, collection: &String) {
     if let Ok(current_path) = env::current_dir() {
+        let env_path = current_path.join(".env");
+
+        // Check if we can load the dotenv file if it exists
+        if env_path.exists() {
+            if let Err(error) = dotenvy::from_path(&env_path) {
+                println!("Failed to load .env file: {}", error.red());
+                return;
+            }
+        }
+
         let collection_path = current_path.join(format!(".rivet/collections/{}", collection));
 
         if !collection_path.exists() {
@@ -57,13 +136,18 @@ pub fn send_function(name: &String, collection: &String) {
         };
 
         // Convert the raw string content of file to toml structure for Rust to read
-        let request_config: RequestConfig = match toml::from_str(&file_content) {
+        let mut request_config: RequestConfig = match toml::from_str(&file_content) {
             Ok(config) => config,
             Err(error) => {
                 println!("Failed to parse TOML file: {}", error.red());
                 return;
             }
         };
+
+        if let Err(error) = resolve_request_placeholders(&mut request_config) {
+            println!("{}", error.red());
+            return;
+        }
 
         let method = match request_config.method.to_uppercase().as_str() {
             "GET" => reqwest::Method::GET,
