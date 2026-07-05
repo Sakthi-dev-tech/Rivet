@@ -1,10 +1,12 @@
 mod actions;
 mod clicommands;
 mod types;
+mod tui;
+
+use std::io;
 
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
-use std::process::ExitCode;
 
 use actions::{add_action, check_rivet::check_rivet_folder, init_action, remove_action};
 use clicommands::{ls_command, send_command};
@@ -50,7 +52,7 @@ enum Commands {
     },
 }
 
-fn main() -> ExitCode {
+fn main() -> io::Result<()> {
     let cli = Cli::parse();
 
     let print_error = |error: String| println!("{}", error.red());
@@ -78,11 +80,11 @@ fn main() -> ExitCode {
         };
 
         match result {
-            Ok(()) => ExitCode::SUCCESS,
-            Err(()) => ExitCode::FAILURE,
+            Ok(()) => Ok(()),
+            Err(()) => Err(io::Error::other("Invalid Rivet Command!")),
         }
     } else {
         println!("TUI Called!");
-        ExitCode::SUCCESS
+        Ok(())
     }
 }
