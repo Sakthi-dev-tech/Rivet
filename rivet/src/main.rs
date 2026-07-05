@@ -1,5 +1,5 @@
 mod actions;
-mod subcommands;
+mod clicommands;
 mod types;
 
 use clap::{Parser, Subcommand};
@@ -7,7 +7,7 @@ use owo_colors::OwoColorize;
 use std::process::ExitCode;
 
 use actions::{add_action, check_rivet::check_rivet_folder, init_action, remove_action};
-use subcommands::{ls_command, send_command};
+use clicommands::{ls_command, send_command};
 
 #[derive(Parser, Debug)]
 #[command(
