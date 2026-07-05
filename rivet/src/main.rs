@@ -11,6 +11,8 @@ use owo_colors::OwoColorize;
 use actions::{add_action, check_rivet::check_rivet_folder, init_action, remove_action};
 use clicommands::{ls_command, send_command};
 
+use crate::tui::main_logic::tui_app;
+
 #[derive(Parser, Debug)]
 #[command(
     author = "Sakthi-dev-tech",
@@ -84,7 +86,7 @@ fn main() -> io::Result<()> {
             Err(()) => Err(io::Error::other("Invalid Rivet Command!")),
         }
     } else {
-        println!("TUI Called!");
+        ratatui::run(tui_app)?;
         Ok(())
     }
 }
