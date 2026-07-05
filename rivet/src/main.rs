@@ -18,7 +18,7 @@ use clicommands::{ls_command, send_command};
 )]
 struct Cli {
     #[command(subcommand)]
-    cmd: Commands,
+    cmd: Option<Commands>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -55,28 +55,34 @@ fn main() -> ExitCode {
 
     let print_error = |error: String| println!("{}", error.red());
 
-    let result = match &cli.cmd {
-        Commands::Init => init_action::init_function().map_err(print_error),
+    // this is for cli commands as it has a subcommand
+    if let Some(command) = &cli.cmd {
+        let result = match command {
+            Commands::Init => init_action::init_function().map_err(print_error),
 
-        Commands::Ls => check_rivet_folder()
-            .map_err(print_error)
-            .and_then(|_| ls_command::ls_function()),
+            Commands::Ls => check_rivet_folder()
+                .map_err(print_error)
+                .and_then(|_| ls_command::ls_function()),
 
-        Commands::Add { path } => check_rivet_folder()
-            .map_err(print_error)
-            .and_then(|_| add_action::add_function(path).map_err(print_error)),
+            Commands::Add { path } => check_rivet_folder()
+                .map_err(print_error)
+                .and_then(|_| add_action::add_function(path).map_err(print_error)),
 
-        Commands::Remove { path } => check_rivet_folder()
-            .map_err(print_error)
-            .and_then(|_| remove_action::remove_function(path).map_err(print_error)),
+            Commands::Remove { path } => check_rivet_folder()
+                .map_err(print_error)
+                .and_then(|_| remove_action::remove_function(path).map_err(print_error)),
 
-        Commands::Send { path } => check_rivet_folder()
-            .map_err(print_error)
-            .and_then(|_| send_command::get_response_table(path).map_err(|_| ())),
-    };
+            Commands::Send { path } => check_rivet_folder()
+                .map_err(print_error)
+                .and_then(|_| send_command::get_response_table(path).map_err(|_| ())),
+        };
 
-    match result {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(()) => ExitCode::FAILURE,
+        match result {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(()) => ExitCode::FAILURE,
+        }
+    } else {
+        println!("TUI Called!");
+        ExitCode::SUCCESS
     }
 }
