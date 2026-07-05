@@ -77,7 +77,7 @@ pub fn resolve_request_placeholders(request_config: &mut RequestConfig) -> Resul
     Ok(())
 }
 
-pub fn send_request(name: &str, collection: &str) -> Result<ApiResponse, String> {
+pub fn send_action(name: &str, collection: &str) -> Result<ApiResponse, String> {
     if let Ok(current_path) = env::current_dir() {
         let env_path = current_path.join(".env");
 
