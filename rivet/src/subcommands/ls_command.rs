@@ -6,40 +6,64 @@ use termtree::Tree;
 fn print_collections(collections_path: &Path) -> std::io::Result<()> {
     let mut root = Tree::new("Your Collection".to_string());
 
-    // Collect all folders within the collections folder into a vector
-    // and sort them by their name
-    let mut folders = fs::read_dir(collections_path)?
+    let mut entries = fs::read_dir(collections_path)?
         .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().map(|t| t.is_dir()).unwrap_or(false))
         .collect::<Vec<_>>();
 
-    folders.sort_by_key(|entry| entry.file_name());
+    entries.sort_by_key(|entry| entry.file_name());
 
-    // for each folder, we extract all the toml files and push it onto the tree
-    for folder in folders {
-        let mut folder_tree = Tree::new(folder.file_name().to_string_lossy().to_string());
-
-        let mut toml_files = fs::read_dir(folder.path())?
-            .filter_map(Result::ok)
-            .filter(|entry| {
-                entry.file_type().map(|t| t.is_file()).unwrap_or(false)
-                    && entry.path().extension().is_some_and(|ext| ext == "toml")
-            })
-            .collect::<Vec<_>>();
-
-        toml_files.sort_by_key(|entry| entry.file_name());
-
-        for file in toml_files {
-            folder_tree.push(file.file_name().to_string_lossy().to_string());
-        }
-
-        if !folder_tree.leaves.is_empty() {
-            root.push(folder_tree);
+    for entry in entries {
+        if let Some(tree) = build_collection_tree(
+            &entry.path(),
+            entry.file_name().to_string_lossy().to_string(),
+        )? {
+            root.push(tree);
         }
     }
 
     println!("{root}");
     Ok(())
+}
+
+fn build_collection_tree(path: &Path, name: String) -> std::io::Result<Option<Tree<String>>> {
+    let file_type = fs::metadata(path)?.file_type();
+
+    if file_type.is_file() {
+        if path.extension().is_some_and(|ext| ext == "toml") {
+            let name = path
+                .file_stem()
+                .map(|stem| stem.to_string_lossy().to_string())
+                .unwrap_or(name);
+            return Ok(Some(Tree::new(name)));
+        }
+
+        return Ok(None);
+    }
+
+    if !file_type.is_dir() {
+        return Ok(None);
+    }
+
+    let mut tree = Tree::new(name);
+    let mut entries = fs::read_dir(path)?
+        .filter_map(Result::ok)
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|entry| entry.file_name());
+
+    for entry in entries {
+        if let Some(child_tree) = build_collection_tree(
+            &entry.path(),
+            entry.file_name().to_string_lossy().to_string(),
+        )? {
+            tree.push(child_tree);
+        }
+    }
+
+    if tree.leaves.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(tree))
+    }
 }
 
 pub fn ls_function() -> Result<(), ()> {

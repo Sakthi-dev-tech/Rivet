@@ -1,15 +1,16 @@
 use owo_colors::OwoColorize;
 use std::{env, fs};
 
-pub fn remove_function(name: &String, collection: &String) -> Result<(), String> {
-    if let Ok(current_path) = env::current_dir() {
-        let collection_path = current_path.join(format!(".rivet/collections/{}", collection));
+use super::request_path::resolve_request_file_path;
 
-        if !collection_path.exists() {
-            return Err(format!("{}", "Collection not found".red()));
+pub fn remove_function(path: &str) -> Result<(), String> {
+    if let Ok(current_path) = env::current_dir() {
+        let file_path = resolve_request_file_path(&current_path, path)?;
+
+        if !file_path.exists() {
+            return Err(format!("{} request config file not found!", path.yellow()));
         }
 
-        let file_path = collection_path.join(format!("{}.toml", name));
         if let Err(error) = fs::remove_file(file_path) {
             return Err(format!("Failed to remove file: {}", error.red()));
         };

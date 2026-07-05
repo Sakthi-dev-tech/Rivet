@@ -1,6 +1,8 @@
 use owo_colors::OwoColorize;
 use std::{env, fs};
 
+use super::request_path::resolve_request_file_path;
+
 const DEFAULT_REQUEST_TOML: &str = r#"method = ""
 url = ""
 
@@ -34,21 +36,21 @@ content = """{}"""
 timeout = 30
 "#;
 
-pub fn add_function(name: &String, collection: &String) -> Result<(), String> {
+pub fn add_function(path: &str) -> Result<(), String> {
     if let Ok(current_path) = env::current_dir() {
-        let collection_path = current_path.join(format!(".rivet/collections/{}", collection));
+        let file_path = resolve_request_file_path(&current_path, path)?;
+        let parent_path = file_path
+            .parent()
+            .ok_or_else(|| "Invalid request path".to_string())?;
 
-        if let Err(error) = fs::create_dir_all(&collection_path) {
+        if let Err(error) = fs::create_dir_all(parent_path) {
             return Err(format!(
                 "Something went wrong when creating collection: {}",
                 error.red()
             ));
         };
 
-        if let Err(error) = fs::write(
-            collection_path.join(format!("{}.toml", name)),
-            DEFAULT_REQUEST_TOML,
-        ) {
+        if let Err(error) = fs::write(file_path, DEFAULT_REQUEST_TOML) {
             return Err(format!(
                 "Something went wrong when making file: {}",
                 error.red()

@@ -4,8 +4,8 @@ use crate::actions::send_action::send_request;
 use owo_colors::OwoColorize;
 use std::time::Duration;
 
-pub fn get_response_table(name: &String, collection: &String) -> Result<(), String> {
-    let response = match send_request(name, collection) {
+pub fn get_response_table(path: &str) -> Result<(), String> {
+    let response = match send_request(path) {
         Ok(response) => response,
         Err(error) => {
             print_error_table("unknown", "unknown", Duration::default(), &error);

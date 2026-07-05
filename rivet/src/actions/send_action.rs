@@ -6,6 +6,8 @@ use owo_colors::OwoColorize;
 use regex::Regex;
 use std::{env, fs, time::Duration};
 
+use super::request_path::resolve_request_file_path;
+
 // Given a string value, it finds environment placeholders and replace it with the proper value
 fn resolve_env_placeholders(value: &str) -> Result<String, String> {
     let placeholder_regex =
@@ -77,7 +79,7 @@ pub fn resolve_request_placeholders(request_config: &mut RequestConfig) -> Resul
     Ok(())
 }
 
-pub fn send_request(name: &str, collection: &str) -> Result<ApiResponse, String> {
+pub fn send_request(path: &str) -> Result<ApiResponse, String> {
     if let Ok(current_path) = env::current_dir() {
         let env_path = current_path.join(".env");
 
@@ -88,16 +90,10 @@ pub fn send_request(name: &str, collection: &str) -> Result<ApiResponse, String>
             }
         }
 
-        let collection_path = current_path.join(format!(".rivet/collections/{}", collection));
-
-        if !collection_path.exists() {
-            return Err(format!("Collection {} not found!", collection.yellow()));
-        }
-
-        let file_path = collection_path.join(format!("{}.toml", name));
+        let file_path = resolve_request_file_path(&current_path, path)?;
 
         if !file_path.exists() {
-            return Err(format!("{} request config file not found!", name.yellow()));
+            return Err(format!("{} request config file not found!", path.yellow()));
         }
 
         // convert file content to raw string

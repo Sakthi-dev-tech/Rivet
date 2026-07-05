@@ -31,37 +31,22 @@ enum Commands {
     /// Adds a new request in a saved collection
     #[command(visible_alias = "a")]
     Add {
-        /// Name of your request
-        #[arg(short, long)]
-        name: String,
-
-        /// Collection where you want to add the request in
-        #[arg(short, long)]
-        collection: String,
+        /// Request path in collection/name format
+        path: String,
     },
 
     /// Removes a request in a saved collection
     #[command(visible_alias = "rm")]
     Remove {
-        /// Name of your request to be deleted
-        #[arg(short, long)]
-        name: String,
-
-        /// Collection where you want to remove the request from
-        #[arg(short, long)]
-        collection: String,
+        /// Request path in collection/name format
+        path: String,
     },
 
     /// Sends your saved request
     #[command(visible_alias = "s")]
     Send {
-        /// Name of your request to be used
-        #[arg(short, long)]
-        name: String,
-
-        /// Collection where the request is in
-        #[arg(short, long)]
-        collection: String,
+        /// Request path in collection/name format
+        path: String,
     },
 }
 
@@ -77,17 +62,17 @@ fn main() -> ExitCode {
             .map_err(print_error)
             .and_then(|_| ls_command::ls_function()),
 
-        Commands::Add { name, collection } => check_rivet_folder()
+        Commands::Add { path } => check_rivet_folder()
             .map_err(print_error)
-            .and_then(|_| add_action::add_function(name, collection).map_err(print_error)),
+            .and_then(|_| add_action::add_function(path).map_err(print_error)),
 
-        Commands::Remove { name, collection } => check_rivet_folder()
+        Commands::Remove { path } => check_rivet_folder()
             .map_err(print_error)
-            .and_then(|_| remove_action::remove_function(name, collection).map_err(print_error)),
+            .and_then(|_| remove_action::remove_function(path).map_err(print_error)),
 
-        Commands::Send { name, collection } => check_rivet_folder()
+        Commands::Send { path } => check_rivet_folder()
             .map_err(print_error)
-            .and_then(|_| send_command::get_response_table(name, collection).map_err(|_| ())),
+            .and_then(|_| send_command::get_response_table(path).map_err(|_| ())),
     };
 
     match result {
