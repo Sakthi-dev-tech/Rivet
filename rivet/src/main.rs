@@ -3,8 +3,8 @@ mod subcommands;
 mod types;
 
 use clap::{Parser, Subcommand};
-use std::process::ExitCode;
 use owo_colors::OwoColorize;
+use std::process::ExitCode;
 
 use actions::{add_action, check_rivet::check_rivet_folder, init_action, remove_action};
 use subcommands::{ls_command, send_command};
@@ -87,7 +87,7 @@ fn main() -> ExitCode {
 
         Commands::Send { name, collection } => check_rivet_folder()
             .map_err(print_error)
-            .and_then(|_| send_command::send_function(name, collection).map_err(print_error)),
+            .and_then(|_| send_command::get_response_table(name, collection).map_err(|_| ())),
     };
 
     match result {

@@ -65,10 +65,10 @@ pub fn print_response_table(
     println!("{table}");
 }
 
-pub fn print_error_table(method: &str, url: &str, duration: Duration, error: &reqwest::Error) {
+pub fn print_error_table(method: &str, url: &str, duration: Duration, error: &str) {
     let mut table = Table::new();
 
-    let error_message = if error.is_timeout() {
+    let error_message = if error.to_lowercase().contains("timed out") {
         "Request timed out. Increase [config] timeout or check the server.".to_string()
     } else {
         error.to_string()

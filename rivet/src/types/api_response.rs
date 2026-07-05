@@ -8,5 +8,5 @@ pub struct ApiResponse {
     pub status: StatusCode,
     pub elapsed: Duration,
     pub content_type: String,
-    pub text: String
+    pub text: String,
 }
