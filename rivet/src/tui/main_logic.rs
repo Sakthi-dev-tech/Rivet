@@ -2,7 +2,10 @@ use std::io;
 
 use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::{
-    DefaultTerminal, Frame, layout::{Constraint, Layout}, symbols::border, widgets::Block ,
+    DefaultTerminal, Frame,
+    layout::{Constraint, Layout},
+    symbols::border,
+    widgets::Block,
 };
 
 use crate::tui::sidebar_ui::sidebar_ui;
@@ -36,21 +39,15 @@ impl App {
     fn draw(&self, frame: &mut Frame) {
         let area = frame.area();
 
-        let block = Block::bordered()
-            .border_set(border::ROUNDED);
+        let block = Block::bordered().border_set(border::ROUNDED);
         let inner = block.inner(area);
 
-        let [app_ui_area, help_row_area] = Layout::vertical([
-            Constraint::Percentage(90),
-            Constraint::Percentage(10)
-        ])
-            .areas(inner);
+        let [app_ui_area, help_row_area] =
+            Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)]).areas(inner);
 
-        let [sidebar_area, config_area] = Layout::horizontal([
-            Constraint::Percentage(10),
-            Constraint::Percentage(90)
-        ])
-            .areas(app_ui_area);
+        let [sidebar_area, config_area] =
+            Layout::horizontal([Constraint::Percentage(10), Constraint::Percentage(90)])
+                .areas(app_ui_area);
 
         frame.render_widget(block, area);
         frame.render_widget(sidebar_ui(), sidebar_area);

@@ -1,7 +1,7 @@
 mod actions;
 mod cli;
-mod types;
 mod tui;
+mod types;
 
 use std::io;
 

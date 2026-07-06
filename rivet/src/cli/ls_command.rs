@@ -1,16 +1,40 @@
-use std::env ;
+use std::env;
 
 use owo_colors::OwoColorize;
+use termtree::Tree;
 
-use crate::actions::ls_action::{build_request_tree};
+use crate::actions::ls_action::{ApiCollectionItem, list_collections_from_path};
+
+fn collection_item_to_tree(item: ApiCollectionItem) -> Tree<String> {
+    match item {
+        ApiCollectionItem::Folder { name, children } => {
+            let mut tree = Tree::new(name);
+
+            for child in children {
+                tree.push(collection_item_to_tree(child));
+            }
+
+            tree
+        }
+        ApiCollectionItem::Request { name, method, path } => {
+            Tree::new(format!("{} {} ({})", method, name, path))
+        }
+    }
+}
 
 pub fn ls_function() -> Result<(), ()> {
     if let Ok(current_path) = env::current_dir() {
         let rivet_path = current_path.join(".rivet");
         let collections_path = rivet_path.join("collections");
 
-        match build_request_tree(&collections_path) {
-            Ok(tree) => {
+        match list_collections_from_path(&collections_path) {
+            Ok(collections) => {
+                let mut tree = Tree::new("collections".to_string());
+
+                for collection in collections {
+                    tree.push(collection_item_to_tree(collection));
+                }
+
                 println!("{}", tree);
             }
             Err(error) => {
