@@ -1,5 +1,5 @@
 mod actions;
-mod clicommands;
+mod cli;
 mod types;
 mod tui;
 
@@ -9,7 +9,7 @@ use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
 
 use actions::{add_action, check_rivet::check_rivet_folder, init_action, remove_action};
-use clicommands::{ls_command, send_command};
+use cli::{ls_command, send_command};
 
 use crate::tui::main_logic::tui_app;
 
