@@ -29,7 +29,7 @@ pub fn ls_function() -> Result<(), ()> {
 
         match list_collections_from_path(&collections_path) {
             Ok(collections) => {
-                let mut tree = Tree::new("collections".to_string());
+                let mut tree = Tree::new("Your Collections".to_string());
 
                 for collection in collections {
                     tree.push(collection_item_to_tree(collection));
