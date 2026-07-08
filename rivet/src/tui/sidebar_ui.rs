@@ -5,7 +5,7 @@ use ratatui::{
     widgets::{Block, List, ListItem, Widget},
 };
 
-use crate::actions::ls_action::ApiCollectionItem;
+use crate::{actions::ls_action::ApiCollectionItem, types::request_type::ApiMethods};
 
 fn tree_prefix(ancestors: &[bool], is_last: bool) -> String {
     let mut prefix = String::new();
@@ -25,6 +25,19 @@ fn tree_prefix(ancestors: &[bool], is_last: bool) -> String {
     }
 
     prefix
+}
+
+fn method_span(method: Option<ApiMethods>) -> Span<'static> {
+    match method {
+        Some(ApiMethods::GET) => Span::from(" GET ").black().on_green(),
+        Some(ApiMethods::POST) => Span::from(" POST ").black().on_yellow(),
+        Some(ApiMethods::PUT) => Span::from(" PUT ").black().on_blue(),
+        Some(ApiMethods::PATCH) => Span::from(" PATCH ").black().on_magenta(),
+        Some(ApiMethods::DELETE) => Span::from(" DELETE ").black().on_red(),
+        Some(ApiMethods::HEAD) => Span::from(" HEAD ").black().on_light_blue(),
+        Some(ApiMethods::OPTIONS) => Span::from(" OPTIONS ").black().on_light_green(),
+        None => Span::from(" Unknown ").black().on_dark_gray(),
+    }
 }
 
 fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> Vec<ListItem<'a>> {
@@ -47,18 +60,9 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> V
             }
 
             ApiCollectionItem::Request { name, method, path } => {
-                let method_span = match method.as_str() {
-                    "GET" => Span::from(format!(" {method} ")).black().on_green(),
-                    "POST" => Span::from(format!(" {method} ")).black().on_yellow(),
-                    "PUT" => Span::from(format!(" {method} ")).black().on_blue(),
-                    "PATCH" => Span::from(format!(" {method} ")).black().on_magenta(),
-                    "DELETE" => Span::from(format!(" {method} ")).black().on_red(),
-                    _ => Span::from(format!(" {method} ")).black().on_dark_gray(),
-                };
-
                 list_items.push(ListItem::new(Line::from(vec![
                     Span::raw(prefix),
-                    method_span,
+                    method_span(*method),
                     Span::raw(format!(" {name} {path}")),
                 ])));
             }

@@ -1,5 +1,7 @@
 use std::{fs, io, path::Path};
 
+use crate::types::request_type::ApiMethods;
+
 pub enum ApiCollectionItem {
     Folder {
         name: String,
@@ -8,9 +10,14 @@ pub enum ApiCollectionItem {
 
     Request {
         name: String,
-        method: String,
+        method: Option<ApiMethods>,
         path: String,
     },
+}
+
+#[derive(serde::Deserialize)]
+struct RequestMethodConfig {
+    method: ApiMethods,
 }
 
 fn request_path_from_file(collections_path: &Path, path: &Path) -> String {
@@ -26,19 +33,12 @@ fn request_path_from_file(collections_path: &Path, path: &Path) -> String {
         .join("/")
 }
 
-fn request_method_from_file(path: &Path) -> String {
+fn request_method_from_file(path: &Path) -> Option<ApiMethods> {
     let file_content = fs::read_to_string(path).unwrap_or_default();
 
-    toml::from_str::<toml::Value>(&file_content)
+    toml::from_str::<RequestMethodConfig>(&file_content)
         .ok()
-        .and_then(|request| {
-            request
-                .get("method")
-                .and_then(|method| method.as_str())
-                .map(str::to_string)
-        })
-        .filter(|method| !method.trim().is_empty())
-        .unwrap_or_else(|| "Unknown".to_string())
+        .map(|config| config.method)
 }
 
 fn build_collection_item(
@@ -109,4 +109,35 @@ pub fn list_collections_from_path(collections_path: &Path) -> io::Result<Vec<Api
     }
 
     Ok(items)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ApiCollectionItem, list_collections_from_path};
+    use crate::types::request_type::ApiMethods;
+    use std::{env, fs};
+
+    #[test]
+    fn list_collections_uses_api_method_for_request_items() {
+        let collections_path =
+            env::temp_dir().join(format!("rivet-ls-action-test-{}", std::process::id()));
+        let request_path = collections_path.join("users.toml");
+
+        let _ = fs::remove_dir_all(&collections_path);
+        fs::create_dir_all(&collections_path).unwrap();
+        fs::write(
+            &request_path,
+            "method = \"HEAD\"\nurl = \"https://example.com\"\n",
+        )
+        .unwrap();
+
+        let collections = list_collections_from_path(&collections_path).unwrap();
+
+        let [ApiCollectionItem::Request { method, .. }] = collections.as_slice() else {
+            panic!("expected one request item");
+        };
+        assert_eq!(*method, Some(ApiMethods::HEAD));
+
+        fs::remove_dir_all(&collections_path).unwrap();
+    }
 }

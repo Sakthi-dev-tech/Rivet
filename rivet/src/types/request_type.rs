@@ -4,7 +4,7 @@ use std::collections::HashMap;
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RequestConfig {
-    pub method: String,
+    pub method: ApiMethods,
     pub url: String,
     pub params: Option<HashMap<String, String>>,
     pub auth: Option<AuthConfig>,
@@ -30,12 +30,16 @@ pub enum AuthConfig {
     },
 }
 
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub enum ApiMethods {
     GET,
     POST,
     PUT,
     PATCH,
-    DELETE
+    DELETE,
+    HEAD,
+    OPTIONS,
 }
 
 #[derive(Debug, Deserialize)]

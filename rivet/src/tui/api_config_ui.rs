@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 
-use crate::types::request_type::RequestConfig;
+use crate::types::request_type::{ApiMethods, RequestConfig};
 
 pub fn api_config_ui(
     frame: &mut Frame,
@@ -21,6 +21,37 @@ pub fn api_config_ui(
                 Style::default().fg(Color::Blue)
             } else {
                 Style::default()
+            };
+
+            let method_text: Span = match request_config.method {
+                ApiMethods::GET => Span::from(format!(" {:?} ", request_config.method))
+                    .black()
+                    .on_green()
+                    .bold(),
+                ApiMethods::POST => Span::from(format!(" {:?} ", request_config.method))
+                    .black()
+                    .on_yellow()
+                    .bold(),
+                ApiMethods::PUT => Span::from(format!(" {:?} ", request_config.method))
+                    .black()
+                    .on_blue()
+                    .bold(),
+                ApiMethods::PATCH => Span::from(format!(" {:?} ", request_config.method))
+                    .black()
+                    .on_magenta()
+                    .bold(),
+                ApiMethods::DELETE => Span::from(format!(" {:?} ", request_config.method))
+                    .black()
+                    .on_red()
+                    .bold(),
+                ApiMethods::HEAD => Span::from(format!(" {:?} ", request_config.method))
+                    .black()
+                    .on_light_blue()
+                    .bold(),
+                ApiMethods::OPTIONS => Span::from(format!(" {:?} ", request_config.method))
+                    .black()
+                    .on_light_green()
+                    .bold(),
             };
 
             let block = Block::bordered()
@@ -56,11 +87,7 @@ pub fn api_config_ui(
             .areas(config_area);
 
             let input = Paragraph::new(Line::from(vec![
-                Span::from(
-                    format!(" {} ", request_config.method))
-                .black()
-                .on_yellow()
-                .bold(),
+                method_text,
                 Span::raw("  "),
                 Span::from(format!("{}", request_config.url)).bold(),
             ]))

@@ -17,6 +17,10 @@ fn collection_item_to_tree(item: ApiCollectionItem) -> Tree<String> {
             tree
         }
         ApiCollectionItem::Request { name, method, path } => {
+            let method = method
+                .map(|method| format!("{:?}", method))
+                .unwrap_or_else(|| "Unknown".to_string());
+
             Tree::new(format!("{} {} ({})", method, name, path))
         }
     }

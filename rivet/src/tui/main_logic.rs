@@ -14,7 +14,7 @@ use crate::{
         api_config_ui::api_config_ui, help_section_ui::help_section_ui, response_ui::response_ui,
         sidebar_ui::sidebar_ui,
     },
-    types::request_type::{RequestBody, RequestConfig},
+    types::request_type::{ApiMethods, RequestBody, RequestConfig},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -134,7 +134,7 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
 
         // TODO: Currently using a mock request config
         selected_api_config_file: Some(RequestConfig {
-            method: String::from("DELETE"),
+            method: ApiMethods::DELETE,
             url: String::from("www.example.com"),
             params: None,
             auth: None,

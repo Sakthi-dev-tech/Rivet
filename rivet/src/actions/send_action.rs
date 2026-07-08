@@ -1,6 +1,6 @@
 use crate::types::{
     api_response::ApiResponse,
-    request_type::{AuthConfig, RequestConfig},
+    request_type::{ApiMethods, AuthConfig, RequestConfig},
 };
 use owo_colors::OwoColorize;
 use regex::Regex;
@@ -38,10 +38,8 @@ fn resolve_env_placeholders(value: &str) -> Result<String, String> {
     Ok(resolved)
 }
 
-// Given a request config, it goes through each key and calls the resolve_env_placeholders on each
-// value
+// Given a request config, it goes through each string value and calls the resolve_env_placeholders.
 pub fn resolve_request_placeholders(request_config: &mut RequestConfig) -> Result<(), String> {
-    request_config.method = resolve_env_placeholders(&request_config.method)?;
     request_config.url = resolve_env_placeholders(&request_config.url)?;
 
     if let Some(params) = &mut request_config.params {
@@ -77,6 +75,18 @@ pub fn resolve_request_placeholders(request_config: &mut RequestConfig) -> Resul
     }
 
     Ok(())
+}
+
+fn request_method(method: ApiMethods) -> reqwest::Method {
+    match method {
+        ApiMethods::GET => reqwest::Method::GET,
+        ApiMethods::POST => reqwest::Method::POST,
+        ApiMethods::PUT => reqwest::Method::PUT,
+        ApiMethods::PATCH => reqwest::Method::PATCH,
+        ApiMethods::DELETE => reqwest::Method::DELETE,
+        ApiMethods::HEAD => reqwest::Method::HEAD,
+        ApiMethods::OPTIONS => reqwest::Method::OPTIONS,
+    }
 }
 
 pub fn send_request(path: &str) -> Result<ApiResponse, String> {
@@ -116,18 +126,7 @@ pub fn send_request(path: &str) -> Result<ApiResponse, String> {
             return Err(format!("{}", error.red()));
         }
 
-        let method = match request_config.method.to_uppercase().as_str() {
-            "GET" => reqwest::Method::GET,
-            "POST" => reqwest::Method::POST,
-            "PUT" => reqwest::Method::PUT,
-            "PATCH" => reqwest::Method::PATCH,
-            "DELETE" => reqwest::Method::DELETE,
-            "HEAD" => reqwest::Method::HEAD,
-            "OPTIONS" => reqwest::Method::OPTIONS,
-            method => {
-                return Err(format!("Invalid HTTP method: {}", method.red()));
-            }
-        };
+        let method = request_method(request_config.method);
 
         let mut request_url = request_config.url.clone();
 
@@ -183,7 +182,7 @@ pub fn send_request(path: &str) -> Result<ApiResponse, String> {
         }
 
         if let Some(body) = request_config.body {
-            if !body.content.trim().is_empty() && request_config.method.to_uppercase() != "GET" {
+            if !body.content.trim().is_empty() && request_config.method != ApiMethods::GET {
                 request = request.body(body.content);
             }
         }
@@ -205,7 +204,7 @@ pub fn send_request(path: &str) -> Result<ApiResponse, String> {
                         let elapsed = started_at.elapsed();
 
                         return Ok(ApiResponse {
-                            method: request_config.method,
+                            method: format!("{:?}", request_config.method),
                             url: final_url,
                             status: status,
                             elapsed: elapsed,
