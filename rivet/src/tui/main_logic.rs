@@ -8,11 +8,14 @@ use ratatui::{
     widgets::Block,
 };
 
-use crate::{actions::ls_action::{ApiCollectionItem, list_collections_from_path}, tui::sidebar_ui::sidebar_ui};
+use crate::{
+    actions::ls_action::{ApiCollectionItem, list_collections_from_path},
+    tui::{api_config_ui::api_config_ui, sidebar_ui::sidebar_ui},
+};
 
 struct App {
     run_app: bool,
-    collections: Vec<ApiCollectionItem>
+    collections: Vec<ApiCollectionItem>,
 }
 
 impl App {
@@ -40,18 +43,24 @@ impl App {
     fn draw(&self, frame: &mut Frame) {
         let area = frame.area();
 
-        let block = Block::bordered().border_set(border::ROUNDED);
+        let block = Block::bordered().border_set(border::EMPTY);
         let inner = block.inner(area);
 
-        let [app_ui_area, _help_row_area] =
-            Layout::vertical([Constraint::Percentage(90), Constraint::Percentage(10)]).areas(inner);
+        let [api_section, _response_section, _help_section] = Layout::vertical([
+            Constraint::Percentage(45),
+            Constraint::Percentage(45),
+            Constraint::Percentage(5),
+        ])
+        .areas(inner);
 
-        let [sidebar_area, _config_area] =
+        let [sidebar_area, config_area] =
             Layout::horizontal([Constraint::Percentage(15), Constraint::Percentage(85)])
-                .areas(app_ui_area);
+                .areas(api_section);
 
         frame.render_widget(block, area);
+
         frame.render_widget(sidebar_ui(&self.collections), sidebar_area);
+        frame.render_widget(api_config_ui(), config_area);
     }
 }
 
@@ -60,9 +69,9 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let collection_path = current_path.join(".rivet/collections");
     let collections = list_collections_from_path(&collection_path)?;
 
-    let mut app = App { 
+    let mut app = App {
         run_app: true,
-        collections
+        collections,
     };
     app.run(terminal)
 }
