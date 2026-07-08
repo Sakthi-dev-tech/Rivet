@@ -1,13 +1,13 @@
 use ratatui::{
-    style::Stylize,
+    style::{Stylize},
     symbols::border,
-    text::Line,
+    text::{Line, Span},
     widgets::{Block, List, ListItem, Widget},
 };
 
 use crate::actions::ls_action::ApiCollectionItem;
 
-fn collection_items<'a>(items: &[ApiCollectionItem], depth: usize) -> Vec<ListItem<'a>> {
+fn collection_items<'a>(items: &'a [ApiCollectionItem], depth: usize) -> Vec<ListItem<'a>> {
     let mut list_items = Vec::new();
 
     for item in items {
@@ -23,9 +23,20 @@ fn collection_items<'a>(items: &[ApiCollectionItem], depth: usize) -> Vec<ListIt
             }
 
             ApiCollectionItem::Request { name, method, path } => {
-                list_items.push(ListItem::new(Line::from(format!(
-                    "{indent}{method} {name} {path}"
-                ))));
+                let method_span = match method.as_str() {
+                    "GET" => Span::from(format!(" {method} ")).black().on_green(),
+                    "POST" => Span::from(format!(" {method} ")).black().on_yellow(),
+                    "PUT" => Span::from(format!(" {method} ")).black().on_blue(),
+                    "PATCH" => Span::from(format!(" {method} ")).black().on_magenta(),
+                    "DELETE" => Span::from(format!(" {method} ")).white().on_red(),
+                    _ => Span::from(format!(" {method} ")).white().on_dark_gray(),
+                };
+
+                list_items.push(ListItem::new(Line::from(vec![
+                    Span::raw(indent),
+                    method_span,
+                    Span::raw(format!(" {name} {path}")),
+                ])));
             }
         }
     }
