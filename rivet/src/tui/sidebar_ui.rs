@@ -1,5 +1,5 @@
 use ratatui::{
-    style::{Stylize},
+    style::Stylize,
     symbols::border,
     text::{Line, Span},
     widgets::{Block, List, ListItem, Widget},
@@ -7,19 +7,43 @@ use ratatui::{
 
 use crate::actions::ls_action::ApiCollectionItem;
 
-fn collection_items<'a>(items: &'a [ApiCollectionItem], depth: usize) -> Vec<ListItem<'a>> {
+fn tree_prefix(ancestors: &[bool], is_last: bool) -> String {
+    let mut prefix = String::new();
+
+    for &ancestor_is_last in ancestors {
+        if ancestor_is_last {
+            prefix.push_str("   ");
+        } else {
+            prefix.push_str("│  ");
+        }
+    }
+
+    if is_last {
+        prefix.push_str("└─ ");
+    } else {
+        prefix.push_str("├─ ");
+    }
+
+    prefix
+}
+
+fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> Vec<ListItem<'a>> {
     let mut list_items = Vec::new();
 
-    for item in items {
-        let indent = " ".repeat(depth);
+    for (index, item) in items.iter().enumerate() {
+        let is_last = index == items.len() - 1;
+        let prefix = tree_prefix(ancestors, is_last);
 
         match item {
             ApiCollectionItem::Folder { name, children } => {
                 list_items.push(ListItem::new(
-                    Line::from(format!("{indent}\u{f07b} {name}")).bold(),
+                    Line::from(format!("{prefix}\u{f07b} {name}")).bold(),
                 ));
 
-                list_items.extend(collection_items(children, depth + 1));
+                let mut child_ancestors = ancestors.to_vec();
+                child_ancestors.push(is_last);
+
+                list_items.extend(collection_items(children, &child_ancestors));
             }
 
             ApiCollectionItem::Request { name, method, path } => {
@@ -33,7 +57,7 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], depth: usize) -> Vec<Lis
                 };
 
                 list_items.push(ListItem::new(Line::from(vec![
-                    Span::raw(indent),
+                    Span::raw(prefix),
                     method_span,
                     Span::raw(format!(" {name} {path}")),
                 ])));
@@ -45,7 +69,7 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], depth: usize) -> Vec<Lis
 }
 
 pub fn sidebar_ui(collections: &[ApiCollectionItem]) -> impl Widget {
-    let items = collection_items(collections, 0);
+    let items = collection_items(collections, &[]);
 
     List::new(items).block(
         Block::bordered()
