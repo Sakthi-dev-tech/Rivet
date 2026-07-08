@@ -46,11 +46,11 @@ pub fn api_config_ui(
                     .bold(),
                 ApiMethods::HEAD => Span::from(format!(" {:?} ", request_config.method))
                     .black()
-                    .on_light_blue()
+                    .on_cyan()
                     .bold(),
                 ApiMethods::OPTIONS => Span::from(format!(" {:?} ", request_config.method))
                     .black()
-                    .on_light_green()
+                    .on_white()
                     .bold(),
             };
 
@@ -75,41 +75,26 @@ pub fn api_config_ui(
             ])
             .areas(inner);
 
-            let [input_area, config_area] =
-                Layout::horizontal([Constraint::Min(24), Constraint::Length(34)])
-                    .areas(request_area);
-
-            let [_, tabs_area, _] = Layout::vertical([
-                Constraint::Percentage(40),
-                Constraint::Percentage(20),
-                Constraint::Percentage(40),
-            ])
-            .areas(config_area);
-
             let input = Paragraph::new(Line::from(vec![
                 method_text,
                 Span::raw("  "),
                 Span::from(format!("{}", request_config.url)).bold(),
             ]))
             .block(Block::bordered().border_set(border::ROUNDED));
-            frame.render_widget(input, input_area);
-
-            let tabs = Paragraph::new(Line::from(vec![
-                Span::from(" Headers ").dark_gray(),
-                Span::raw(" "),
-                Span::from(" Query ").dark_gray(),
-                Span::raw(" "),
-                Span::from(" Body ").white().on_blue().bold(),
-                Span::raw(" "),
-                Span::from(" Preview ").dark_gray(),
-            ]))
-            .right_aligned();
-            frame.render_widget(tabs, tabs_area);
+            frame.render_widget(input, request_area);
 
             frame.render_widget(Paragraph::new(Line::default()), spacer_area);
 
             let body_block = Block::bordered()
-                .title_top(Line::from(" Body ").bold())
+                .title_top(Line::from(vec![
+                Span::from(" Headers ").dark_gray(),
+                Span::raw(" "),
+                Span::from(" Query ").dark_gray(),
+                Span::raw(" "),
+                Span::from(" Body ").black().on_blue().bold(),
+                Span::raw(" "),
+                Span::from(" Preview ").dark_gray(),
+            ]))
                 .border_set(border::PLAIN);
 
             let body_content = request_config

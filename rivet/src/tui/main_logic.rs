@@ -134,7 +134,7 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
 
         // TODO: Currently using a mock request config
         selected_api_config_file: Some(RequestConfig {
-            method: ApiMethods::DELETE,
+            method: ApiMethods::HEAD,
             url: String::from("www.example.com"),
             params: None,
             auth: None,

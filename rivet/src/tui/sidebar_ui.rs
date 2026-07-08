@@ -34,8 +34,8 @@ fn method_span(method: Option<ApiMethods>) -> Span<'static> {
         Some(ApiMethods::PUT) => Span::from(" PUT ").black().on_blue(),
         Some(ApiMethods::PATCH) => Span::from(" PATCH ").black().on_magenta(),
         Some(ApiMethods::DELETE) => Span::from(" DELETE ").black().on_red(),
-        Some(ApiMethods::HEAD) => Span::from(" HEAD ").black().on_light_blue(),
-        Some(ApiMethods::OPTIONS) => Span::from(" OPTIONS ").black().on_light_green(),
+        Some(ApiMethods::HEAD) => Span::from(" HEAD ").black().on_cyan(),
+        Some(ApiMethods::OPTIONS) => Span::from(" OPTIONS ").black().on_white(),
         None => Span::from(" Unknown ").black().on_dark_gray(),
     }
 }
