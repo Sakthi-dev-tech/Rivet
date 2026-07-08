@@ -30,6 +30,14 @@ pub enum AuthConfig {
     },
 }
 
+pub enum ApiMethods {
+    GET,
+    POST,
+    PUT,
+    PATCH,
+    DELETE
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub timeout: u64,

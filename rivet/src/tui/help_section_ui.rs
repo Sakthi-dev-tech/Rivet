@@ -1,4 +1,7 @@
-use ratatui::{symbols::border, widgets::{Block, Widget}};
+use ratatui::{
+    symbols::border,
+    widgets::{Block, Widget},
+};
 
 pub fn help_section_ui() -> impl Widget {
     Block::bordered()

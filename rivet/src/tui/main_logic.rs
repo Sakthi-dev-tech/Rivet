@@ -14,6 +14,7 @@ use crate::{
         api_config_ui::api_config_ui, help_section_ui::help_section_ui, response_ui::response_ui,
         sidebar_ui::sidebar_ui,
     },
+    types::request_type::{RequestBody, RequestConfig},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -23,10 +24,14 @@ enum ActiveSession {
     Response,
 }
 
-struct App {
+pub struct App {
+    // General App States
     run_app: bool,
     collections: Vec<ApiCollectionItem>,
     active_session: ActiveSession,
+
+    // App states for config
+    selected_api_config_file: Option<RequestConfig>,
 }
 
 impl App {
@@ -43,21 +48,21 @@ impl App {
             self.active_session = match key_event.code {
                 KeyCode::Char('h') => match self.active_session {
                     ActiveSession::Config => ActiveSession::Sidebar,
-                    section => section
+                    section => section,
                 },
                 KeyCode::Char('l') => match self.active_session {
                     ActiveSession::Sidebar => ActiveSession::Config,
-                    section => section
+                    section => section,
                 },
                 KeyCode::Char('j') => match self.active_session {
                     ActiveSession::Sidebar | ActiveSession::Config => ActiveSession::Response,
-                    section => section
+                    section => section,
                 },
                 KeyCode::Char('k') => match self.active_session {
                     ActiveSession::Response => ActiveSession::Config,
-                    section => section
-                }
-                _ => self.active_session
+                    section => section,
+                },
+                _ => self.active_session,
             };
         }
 
@@ -96,16 +101,23 @@ impl App {
 
         frame.render_widget(block, area);
 
-        frame.render_widget(sidebar_ui(
+        frame.render_widget(
+            sidebar_ui(
                 &self.collections,
-                self.active_session == ActiveSession::Sidebar
-                ), sidebar_area);
-        frame.render_widget(api_config_ui(
-                self.active_session == ActiveSession::Config
-                ), config_area);
-        frame.render_widget(response_ui(
-                self.active_session == ActiveSession::Response
-                ), response_section);
+                self.active_session == ActiveSession::Sidebar,
+            ),
+            sidebar_area,
+        );
+        api_config_ui(
+            frame,
+            config_area,
+            &self.selected_api_config_file,
+            self.active_session == ActiveSession::Config,
+        );
+        frame.render_widget(
+            response_ui(self.active_session == ActiveSession::Response),
+            response_section,
+        );
         frame.render_widget(help_section_ui(), help_section);
     }
 }
@@ -119,6 +131,32 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
         run_app: true,
         collections,
         active_session: ActiveSession::Sidebar,
+
+        // TODO: Currently using a mock request config
+        selected_api_config_file: Some(RequestConfig {
+            method: String::from("DELETE"),
+            url: String::from("www.example.com"),
+            params: None,
+            auth: None,
+            headers: None,
+            body: Some(RequestBody {
+                content: String::from(
+                    r#"{
+  "username": "johndoe",
+  "email": "john.doe@example.com",
+  "age": 28,
+  "is_active": true,
+  "skills": ["JavaScript", "Python", "SQL"],
+  "address": {
+    "street": "123 Main Street",
+    "city": "Singapore",
+    "zipcode": "730000"
+  }
+}"#,
+                ),
+            }),
+            config: None,
+        }),
     };
     app.run(terminal)
 }

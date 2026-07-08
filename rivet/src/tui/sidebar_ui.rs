@@ -37,7 +37,7 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> V
         match item {
             ApiCollectionItem::Folder { name, children } => {
                 list_items.push(ListItem::new(
-                    Line::from(format!("{prefix}\u{f07c} {name}")).bold(),
+                    Line::from(format!("{prefix}\u{f07c} {name}")).yellow().bold(),
                 ));
 
                 let mut child_ancestors = ancestors.to_vec();
