@@ -1,10 +1,5 @@
 use ratatui::{
-    buffer::Buffer,
-    layout::{Constraint, Layout, Rect},
-    style::Stylize,
-    symbols::border,
-    text::{Line, Span},
-    widgets::{Block, Paragraph, Widget},
+    buffer::Buffer, layout::{Constraint, Layout, Rect}, style::Stylize, symbols::border, text::{Line, Span}, widgets::{Block, Paragraph, Widget},
 };
 
 struct ApiConfigUi;
@@ -20,7 +15,7 @@ impl Widget for ApiConfigUi {
         block.render(area, buf);
 
         let [request_area, spacer_area, body_area] = Layout::vertical([
-            Constraint::Length(1),
+            Constraint::Length(3),
             Constraint::Length(1),
             Constraint::Min(5),
         ])
@@ -34,6 +29,8 @@ impl Widget for ApiConfigUi {
             Span::raw("  "),
             Span::from("some_url/users").bold(),
         ]))
+        .block(Block::bordered()
+            .border_set(border::ROUNDED))
         .render(input_area, buf);
 
         Paragraph::new(Line::from(vec![
