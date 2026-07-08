@@ -1,16 +1,30 @@
 use ratatui::{
-    buffer::Buffer, layout::{Constraint, Layout, Rect}, style::Stylize, symbols::border, text::{Line, Span}, widgets::{Block, Paragraph, Widget},
+    buffer::Buffer, layout::{Constraint, Layout, Rect}, style::{Color, Style, Stylize}, symbols::border, text::{Line, Span}, widgets::{Block, Paragraph, Widget},
 };
 
-struct ApiConfigUi;
+struct ApiConfigUi {
+    is_focused: bool,
+}
 
 impl Widget for ApiConfigUi {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let border_style = if self.is_focused {
+            Style::default()
+                .fg(Color::Blue)
+        } else {
+            Style::default()
+        };
+
         let block = Block::bordered()
+            .border_style(border_style)
             .title_top(Line::from(" users/create-user ").bold().left_aligned())
             .title_top(Line::from(" Env: .env ").blue().right_aligned())
             .title_top(Line::from(" [saved] ").green().right_aligned())
-            .border_set(border::ROUNDED);
+            .border_set(if self.is_focused {
+                border::DOUBLE
+            } else {
+                border::ROUNDED
+            });
         let inner = block.inner(area);
 
         block.render(area, buf);
@@ -76,6 +90,8 @@ impl Widget for ApiConfigUi {
     }
 }
 
-pub fn api_config_ui() -> impl Widget {
-    ApiConfigUi
+pub fn api_config_ui(is_focused: bool) -> impl Widget {
+    ApiConfigUi {
+        is_focused
+    }
 }

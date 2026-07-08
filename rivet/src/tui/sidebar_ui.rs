@@ -1,5 +1,5 @@
 use ratatui::{
-    style::Stylize,
+    style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
     widgets::{Block, List, ListItem, Widget},
@@ -68,12 +68,22 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> V
     list_items
 }
 
-pub fn sidebar_ui(collections: &[ApiCollectionItem]) -> impl Widget {
+pub fn sidebar_ui(collections: &[ApiCollectionItem], is_focused: bool) -> impl Widget {
     let items = collection_items(collections, &[]);
+    let border_style = if is_focused {
+        Style::default().fg(Color::Blue)
+    } else {
+        Style::default()
+    };
 
     List::new(items).block(
         Block::bordered()
+            .border_style(border_style)
             .title_top(Line::from(" <●> Rivet APIs ").bold().left_aligned())
-            .border_set(border::ROUNDED),
+            .border_set(if is_focused {
+                border::DOUBLE
+            } else {
+                border::ROUNDED
+            }),
     )
 }

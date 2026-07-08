@@ -1,6 +1,6 @@
 use std::{env, io};
 
-use crossterm::event::{KeyCode, KeyEventKind};
+use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Layout},
@@ -9,18 +9,56 @@ use ratatui::{
 };
 
 use crate::{
-    actions::ls_action::{ApiCollectionItem, list_collections_from_path}, tui::{api_config_ui::api_config_ui, help_section_ui::help_section_ui, response_ui::response_ui, sidebar_ui::sidebar_ui},
+    actions::ls_action::{ApiCollectionItem, list_collections_from_path},
+    tui::{
+        api_config_ui::api_config_ui, help_section_ui::help_section_ui, response_ui::response_ui,
+        sidebar_ui::sidebar_ui,
+    },
 };
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ActiveSession {
+    Sidebar,
+    Config,
+    Response,
+}
 
 struct App {
     run_app: bool,
     collections: Vec<ApiCollectionItem>,
+    active_session: ActiveSession,
 }
 
 impl App {
     fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) -> io::Result<()> {
+        if key_event.kind != KeyEventKind::Press {
+            return Ok(());
+        }
         if key_event.kind == KeyEventKind::Press && key_event.code == KeyCode::Char('q') {
             self.run_app = false;
+            return Ok(());
+        }
+
+        if key_event.modifiers.contains(KeyModifiers::ALT) {
+            self.active_session = match key_event.code {
+                KeyCode::Char('h') => match self.active_session {
+                    ActiveSession::Config => ActiveSession::Sidebar,
+                    section => section
+                },
+                KeyCode::Char('l') => match self.active_session {
+                    ActiveSession::Sidebar => ActiveSession::Config,
+                    section => section
+                },
+                KeyCode::Char('j') => match self.active_session {
+                    ActiveSession::Sidebar | ActiveSession::Config => ActiveSession::Response,
+                    section => section
+                },
+                KeyCode::Char('k') => match self.active_session {
+                    ActiveSession::Response => ActiveSession::Config,
+                    section => section
+                }
+                _ => self.active_session
+            };
         }
 
         Ok(())
@@ -58,9 +96,16 @@ impl App {
 
         frame.render_widget(block, area);
 
-        frame.render_widget(sidebar_ui(&self.collections), sidebar_area);
-        frame.render_widget(api_config_ui(), config_area);
-        frame.render_widget(response_ui(), response_section);
+        frame.render_widget(sidebar_ui(
+                &self.collections,
+                self.active_session == ActiveSession::Sidebar
+                ), sidebar_area);
+        frame.render_widget(api_config_ui(
+                self.active_session == ActiveSession::Config
+                ), config_area);
+        frame.render_widget(response_ui(
+                self.active_session == ActiveSession::Response
+                ), response_section);
         frame.render_widget(help_section_ui(), help_section);
     }
 }
@@ -73,6 +118,7 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let mut app = App {
         run_app: true,
         collections,
+        active_session: ActiveSession::Sidebar,
     };
     app.run(terminal)
 }
