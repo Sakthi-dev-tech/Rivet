@@ -8,6 +8,7 @@ impl Widget for ApiConfigUi {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::bordered()
             .title_top(Line::from(" users/create-user ").bold().left_aligned())
+            .title_top(Line::from(" Env: .env ").blue().right_aligned())
             .title_top(Line::from(" [saved] ").green().right_aligned())
             .border_set(border::ROUNDED);
         let inner = block.inner(area);
@@ -21,8 +22,14 @@ impl Widget for ApiConfigUi {
         ])
         .areas(inner);
 
-        let [input_area, tabs_area] =
+        let [input_area, config_area] =
             Layout::horizontal([Constraint::Min(24), Constraint::Length(34)]).areas(request_area);
+
+        let [_, tabs_area, _] = Layout::vertical([
+            Constraint::Percentage(40),
+            Constraint::Percentage(20),
+            Constraint::Percentage(40),
+        ]).areas(config_area);
 
         Paragraph::new(Line::from(vec![
             Span::from(" POST ").black().on_yellow().bold(),

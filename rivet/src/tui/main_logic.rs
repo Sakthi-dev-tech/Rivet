@@ -9,8 +9,7 @@ use ratatui::{
 };
 
 use crate::{
-    actions::ls_action::{ApiCollectionItem, list_collections_from_path},
-    tui::{api_config_ui::api_config_ui, sidebar_ui::sidebar_ui},
+    actions::ls_action::{ApiCollectionItem, list_collections_from_path}, tui::{api_config_ui::api_config_ui, help_section_ui::help_section_ui, response_ui::response_ui, sidebar_ui::sidebar_ui},
 };
 
 struct App {
@@ -46,10 +45,10 @@ impl App {
         let block = Block::bordered().border_set(border::EMPTY);
         let inner = block.inner(area);
 
-        let [api_section, _response_section, _help_section] = Layout::vertical([
-            Constraint::Percentage(45),
-            Constraint::Percentage(45),
-            Constraint::Percentage(5),
+        let [api_section, response_section, help_section] = Layout::vertical([
+            Constraint::Percentage(48),
+            Constraint::Percentage(42),
+            Constraint::Percentage(10),
         ])
         .areas(inner);
 
@@ -61,6 +60,8 @@ impl App {
 
         frame.render_widget(sidebar_ui(&self.collections), sidebar_area);
         frame.render_widget(api_config_ui(), config_area);
+        frame.render_widget(response_ui(), response_section);
+        frame.render_widget(help_section_ui(), help_section);
     }
 }
 

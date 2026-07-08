@@ -37,7 +37,7 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> V
         match item {
             ApiCollectionItem::Folder { name, children } => {
                 list_items.push(ListItem::new(
-                    Line::from(format!("{prefix}\u{f07b} {name}")).bold(),
+                    Line::from(format!("{prefix}\u{f07c} {name}")).bold(),
                 ));
 
                 let mut child_ancestors = ancestors.to_vec();
@@ -52,8 +52,8 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> V
                     "POST" => Span::from(format!(" {method} ")).black().on_yellow(),
                     "PUT" => Span::from(format!(" {method} ")).black().on_blue(),
                     "PATCH" => Span::from(format!(" {method} ")).black().on_magenta(),
-                    "DELETE" => Span::from(format!(" {method} ")).white().on_red(),
-                    _ => Span::from(format!(" {method} ")).white().on_dark_gray(),
+                    "DELETE" => Span::from(format!(" {method} ")).black().on_red(),
+                    _ => Span::from(format!(" {method} ")).black().on_dark_gray(),
                 };
 
                 list_items.push(ListItem::new(Line::from(vec![
@@ -73,7 +73,7 @@ pub fn sidebar_ui(collections: &[ApiCollectionItem]) -> impl Widget {
 
     List::new(items).block(
         Block::bordered()
-            .title_top(Line::from(" Your APIs ").bold().left_aligned())
+            .title_top(Line::from(" <●> Rivet APIs ").bold().left_aligned())
             .border_set(border::ROUNDED),
     )
 }
