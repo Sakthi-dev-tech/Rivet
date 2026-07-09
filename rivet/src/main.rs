@@ -86,6 +86,10 @@ fn main() -> io::Result<()> {
             Err(()) => Err(io::Error::other("Invalid Rivet Command!")),
         }
     } else {
+        if let Err(error) = check_rivet_folder() {
+            print_error(error);
+        };
+
         ratatui::run(tui_app)?;
         Ok(())
     }
