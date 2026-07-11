@@ -1,6 +1,6 @@
 use std::{env, io};
 
-use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Layout},
@@ -44,27 +44,25 @@ impl App {
             return Ok(());
         }
 
-        if key_event.modifiers.contains(KeyModifiers::ALT) {
-            self.active_session = match key_event.code {
-                KeyCode::Char('h') => match self.active_session {
-                    ActiveSession::Config => ActiveSession::Sidebar,
-                    section => section,
-                },
-                KeyCode::Char('l') => match self.active_session {
-                    ActiveSession::Sidebar => ActiveSession::Config,
-                    section => section,
-                },
-                KeyCode::Char('j') => match self.active_session {
-                    ActiveSession::Sidebar | ActiveSession::Config => ActiveSession::Response,
-                    section => section,
-                },
-                KeyCode::Char('k') => match self.active_session {
-                    ActiveSession::Response => ActiveSession::Config,
-                    section => section,
-                },
-                _ => self.active_session,
-            };
-        }
+        self.active_session = match key_event.code {
+            KeyCode::Char('h') => match self.active_session {
+                ActiveSession::Config => ActiveSession::Sidebar,
+                section => section,
+            },
+            KeyCode::Char('l') => match self.active_session {
+                ActiveSession::Sidebar => ActiveSession::Config,
+                section => section,
+            },
+            KeyCode::Char('j') => match self.active_session {
+                ActiveSession::Sidebar | ActiveSession::Config => ActiveSession::Response,
+                section => section,
+            },
+            KeyCode::Char('k') => match self.active_session {
+                ActiveSession::Response => ActiveSession::Config,
+                section => section,
+            },
+            _ => self.active_session,
+        };
 
         Ok(())
     }
