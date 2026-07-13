@@ -4,8 +4,8 @@ use ratatui::{
     widgets::{Block, Widget},
 };
 
-pub fn response_ui(is_focused: bool) -> impl Widget {
-    let border_style = if is_focused {
+pub fn response_ui(is_hovered: bool, is_focused: bool) -> impl Widget {
+    let border_style = if is_hovered {
         Style::default().fg(Color::Blue)
     } else {
         Style::default()

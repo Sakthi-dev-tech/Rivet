@@ -28,7 +28,8 @@ pub struct App {
     // General App States
     run_app: bool,
     collections: Vec<ApiCollectionItem>,
-    hover_panel: Panels,
+    hovered_panel: Panels,
+    is_panel_focused: bool,
 
     // App states for config
     selected_api_config_file: Option<RequestConfig>,
@@ -44,24 +45,37 @@ impl App {
             return Ok(());
         }
 
-        self.hover_panel = match key_event.code {
-            KeyCode::Char('h') => match self.hover_panel {
+        match key_event.code {
+            KeyCode::Enter => {
+                self.is_panel_focused = true;
+                return Ok(());
+            }
+            KeyCode::Esc => {
+                self.is_panel_focused = false;
+                return Ok(());
+            }
+            _ if self.is_panel_focused => return Ok(()),
+            _ => {}
+        }
+
+        self.hovered_panel = match key_event.code {
+            KeyCode::Char('h') => match self.hovered_panel {
                 Panels::Config => Panels::Sidebar,
                 section => section,
             },
-            KeyCode::Char('l') => match self.hover_panel {
+            KeyCode::Char('l') => match self.hovered_panel {
                 Panels::Sidebar => Panels::Config,
                 section => section,
             },
-            KeyCode::Char('j') => match self.hover_panel {
+            KeyCode::Char('j') => match self.hovered_panel {
                 Panels::Sidebar | Panels::Config => Panels::Response,
                 section => section,
             },
-            KeyCode::Char('k') => match self.hover_panel {
+            KeyCode::Char('k') => match self.hovered_panel {
                 Panels::Response => Panels::Config,
                 section => section,
             },
-            _ => self.hover_panel,
+            _ => self.hovered_panel,
         };
 
         Ok(())
@@ -82,6 +96,9 @@ impl App {
 
     fn draw(&self, frame: &mut Frame) {
         let area = frame.area();
+        let sidebar_is_hovered = self.hovered_panel == Panels::Sidebar;
+        let config_is_hovered = self.hovered_panel == Panels::Config;
+        let response_is_hovered = self.hovered_panel == Panels::Response;
 
         let block = Block::bordered().border_set(border::EMPTY);
         let inner = block.inner(area);
@@ -102,7 +119,8 @@ impl App {
         frame.render_widget(
             sidebar_ui(
                 &self.collections,
-                self.hover_panel == Panels::Sidebar,
+                sidebar_is_hovered,
+                sidebar_is_hovered && self.is_panel_focused,
             ),
             sidebar_area,
         );
@@ -110,10 +128,14 @@ impl App {
             frame,
             config_area,
             &self.selected_api_config_file,
-            self.hover_panel == Panels::Config,
+            config_is_hovered,
+            config_is_hovered && self.is_panel_focused,
         );
         frame.render_widget(
-            response_ui(self.hover_panel == Panels::Response),
+            response_ui(
+                response_is_hovered,
+                response_is_hovered && self.is_panel_focused,
+            ),
             response_section,
         );
         frame.render_widget(help_section_ui(), help_section);
@@ -128,7 +150,8 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let mut app = App {
         run_app: true,
         collections,
-        hover_panel: Panels::Sidebar,
+        hovered_panel: Panels::Sidebar,
+        is_panel_focused: false,
 
         // TODO: Currently using a mock request config
         selected_api_config_file: Some(RequestConfig {

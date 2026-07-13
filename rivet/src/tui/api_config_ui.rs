@@ -13,11 +13,12 @@ pub fn api_config_ui(
     frame: &mut Frame,
     area: Rect,
     _current_file: &Option<RequestConfig>,
+    is_hovered: bool,
     is_focused: bool,
 ) {
     match _current_file {
         Some(request_config) => {
-            let border_style = if is_focused {
+            let border_style = if is_hovered {
                 Style::default().fg(Color::Blue)
             } else {
                 Style::default()
@@ -87,14 +88,14 @@ pub fn api_config_ui(
 
             let body_block = Block::bordered()
                 .title_top(Line::from(vec![
-                Span::from(" Headers ").dark_gray(),
-                Span::raw(" "),
-                Span::from(" Query ").dark_gray(),
-                Span::raw(" "),
-                Span::from(" Body ").black().on_blue().bold(),
-                Span::raw(" "),
-                Span::from(" Preview ").dark_gray(),
-            ]))
+                    Span::from(" Headers ").dark_gray(),
+                    Span::raw(" "),
+                    Span::from(" Query ").dark_gray(),
+                    Span::raw(" "),
+                    Span::from(" Body ").black().on_blue().bold(),
+                    Span::raw(" "),
+                    Span::from(" Preview ").dark_gray(),
+                ]))
                 .border_set(border::PLAIN);
 
             let body_content = request_config

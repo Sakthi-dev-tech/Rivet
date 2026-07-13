@@ -80,9 +80,13 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> V
     list_items
 }
 
-pub fn sidebar_ui(collections: &[ApiCollectionItem], is_focused: bool) -> impl Widget {
+pub fn sidebar_ui(
+    collections: &[ApiCollectionItem],
+    is_hovered: bool,
+    is_focused: bool,
+) -> impl Widget {
     let items = collection_items(collections, &[]);
-    let border_style = if is_focused {
+    let border_style = if is_hovered {
         Style::default().fg(Color::Blue)
     } else {
         Style::default()
