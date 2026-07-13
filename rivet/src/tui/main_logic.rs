@@ -18,7 +18,7 @@ use crate::{
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum ActiveSession {
+enum Panels {
     Sidebar,
     Config,
     Response,
@@ -28,7 +28,7 @@ pub struct App {
     // General App States
     run_app: bool,
     collections: Vec<ApiCollectionItem>,
-    active_session: ActiveSession,
+    hover_panel: Panels,
 
     // App states for config
     selected_api_config_file: Option<RequestConfig>,
@@ -44,24 +44,24 @@ impl App {
             return Ok(());
         }
 
-        self.active_session = match key_event.code {
-            KeyCode::Char('h') => match self.active_session {
-                ActiveSession::Config => ActiveSession::Sidebar,
+        self.hover_panel = match key_event.code {
+            KeyCode::Char('h') => match self.hover_panel {
+                Panels::Config => Panels::Sidebar,
                 section => section,
             },
-            KeyCode::Char('l') => match self.active_session {
-                ActiveSession::Sidebar => ActiveSession::Config,
+            KeyCode::Char('l') => match self.hover_panel {
+                Panels::Sidebar => Panels::Config,
                 section => section,
             },
-            KeyCode::Char('j') => match self.active_session {
-                ActiveSession::Sidebar | ActiveSession::Config => ActiveSession::Response,
+            KeyCode::Char('j') => match self.hover_panel {
+                Panels::Sidebar | Panels::Config => Panels::Response,
                 section => section,
             },
-            KeyCode::Char('k') => match self.active_session {
-                ActiveSession::Response => ActiveSession::Config,
+            KeyCode::Char('k') => match self.hover_panel {
+                Panels::Response => Panels::Config,
                 section => section,
             },
-            _ => self.active_session,
+            _ => self.hover_panel,
         };
 
         Ok(())
@@ -102,7 +102,7 @@ impl App {
         frame.render_widget(
             sidebar_ui(
                 &self.collections,
-                self.active_session == ActiveSession::Sidebar,
+                self.hover_panel == Panels::Sidebar,
             ),
             sidebar_area,
         );
@@ -110,10 +110,10 @@ impl App {
             frame,
             config_area,
             &self.selected_api_config_file,
-            self.active_session == ActiveSession::Config,
+            self.hover_panel == Panels::Config,
         );
         frame.render_widget(
-            response_ui(self.active_session == ActiveSession::Response),
+            response_ui(self.hover_panel == Panels::Response),
             response_section,
         );
         frame.render_widget(help_section_ui(), help_section);
@@ -128,7 +128,7 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let mut app = App {
         run_app: true,
         collections,
-        active_session: ActiveSession::Sidebar,
+        hover_panel: Panels::Sidebar,
 
         // TODO: Currently using a mock request config
         selected_api_config_file: Some(RequestConfig {

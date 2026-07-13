@@ -48,15 +48,23 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> V
         let prefix = tree_prefix(ancestors, is_last);
 
         match item {
-            ApiCollectionItem::Folder { name, children } => {
+            ApiCollectionItem::Folder {
+                name,
+                children,
+                is_expanded,
+            } => {
+                let icon = if *is_expanded { "\u{f07c}" } else { "\u{f07b}" };
+
                 list_items.push(ListItem::new(
-                    Line::from(format!("{prefix}\u{f07c} {name}")).yellow().bold(),
+                    Line::from(format!("{prefix}{icon} {name}")).yellow().bold(),
                 ));
 
-                let mut child_ancestors = ancestors.to_vec();
-                child_ancestors.push(is_last);
+                if *is_expanded {
+                    let mut child_ancestors = ancestors.to_vec();
+                    child_ancestors.push(is_last);
 
-                list_items.extend(collection_items(children, &child_ancestors));
+                    list_items.extend(collection_items(children, &child_ancestors));
+                }
             }
 
             ApiCollectionItem::Request { name, method, path } => {

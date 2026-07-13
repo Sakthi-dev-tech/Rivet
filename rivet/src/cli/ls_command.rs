@@ -1,5 +1,4 @@
 use std::env;
-
 use owo_colors::OwoColorize;
 use termtree::Tree;
 
@@ -7,7 +6,7 @@ use crate::actions::ls_action::{ApiCollectionItem, list_collections_from_path};
 
 fn collection_item_to_tree(item: ApiCollectionItem) -> Tree<String> {
     match item {
-        ApiCollectionItem::Folder { name, children } => {
+        ApiCollectionItem::Folder { name, children, is_expanded: _ } => {
             let mut tree = Tree::new(name);
 
             for child in children {

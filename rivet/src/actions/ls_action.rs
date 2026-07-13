@@ -6,6 +6,7 @@ pub enum ApiCollectionItem {
     Folder {
         name: String,
         children: Vec<ApiCollectionItem>,
+        is_expanded: bool
     },
 
     Request {
@@ -86,7 +87,7 @@ fn build_collection_item(
     if children.is_empty() {
         Ok(None)
     } else {
-        Ok(Some(ApiCollectionItem::Folder { name, children }))
+        Ok(Some(ApiCollectionItem::Folder { name, children, is_expanded: true }))
     }
 }
 
