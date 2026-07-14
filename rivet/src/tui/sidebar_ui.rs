@@ -1,8 +1,10 @@
 use ratatui::{
+    Frame,
+    layout::Rect,
     style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
-    widgets::{Block, List, ListItem, Widget},
+    widgets::{Block, List, ListItem},
 };
 
 use crate::{actions::ls_action::ApiCollectionItem, types::request_type::ApiMethods};
@@ -81,10 +83,12 @@ fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> V
 }
 
 pub fn sidebar_ui(
+    frame: &mut Frame,
+    area: Rect,
     collections: &[ApiCollectionItem],
     is_hovered: bool,
     is_focused: bool,
-) -> impl Widget {
+) {
     let items = collection_items(collections, &[]);
     let border_style = if is_hovered {
         Style::default().fg(Color::Blue)
@@ -92,7 +96,7 @@ pub fn sidebar_ui(
         Style::default()
     };
 
-    List::new(items).block(
+    let sidebar_widget = List::new(items).block(
         Block::bordered()
             .border_style(border_style)
             .title_top(Line::from(" <●> Rivet APIs ").bold().left_aligned())
@@ -101,5 +105,7 @@ pub fn sidebar_ui(
             } else {
                 border::ROUNDED
             }),
-    )
+    );
+
+    frame.render_widget(sidebar_widget, area);
 }

@@ -116,14 +116,14 @@ impl App {
 
         frame.render_widget(block, area);
 
-        frame.render_widget(
-            sidebar_ui(
-                &self.collections,
-                sidebar_is_hovered,
-                sidebar_is_hovered && self.is_panel_focused,
-            ),
+        sidebar_ui(
+            frame,
             sidebar_area,
+            &self.collections,
+            sidebar_is_hovered,
+            sidebar_is_hovered && self.is_panel_focused,
         );
+
         api_config_ui(
             frame,
             config_area,
@@ -131,14 +131,18 @@ impl App {
             config_is_hovered,
             config_is_hovered && self.is_panel_focused,
         );
-        frame.render_widget(
-            response_ui(
-                response_is_hovered,
-                response_is_hovered && self.is_panel_focused,
-            ),
+
+        response_ui(
+            frame,
             response_section,
+            response_is_hovered,
+            response_is_hovered && self.is_panel_focused,
         );
-        frame.render_widget(help_section_ui(), help_section);
+
+        help_section_ui(
+            frame,
+            help_section
+            );
     }
 }
 
