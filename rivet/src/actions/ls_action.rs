@@ -21,6 +21,8 @@ struct RequestMethodConfig {
     method: ApiMethods,
 }
 
+/// Builds the request path by stripping the collection root and file extension.
+/// Example output: `users/list` for `<collections>/users/list.toml`.
 fn request_path_from_file(collections_path: &Path, path: &Path) -> String {
     let path_without_extension = path.with_extension("");
     let relative_path = path_without_extension
@@ -34,6 +36,8 @@ fn request_path_from_file(collections_path: &Path, path: &Path) -> String {
         .join("/")
 }
 
+/// Reads a TOML request file and returns its configured HTTP method if present.
+/// Example output: `Some(ApiMethods::GET)` for `method = "GET"`.
 fn request_method_from_file(path: &Path) -> Option<ApiMethods> {
     let file_content = fs::read_to_string(path).unwrap_or_default();
 
@@ -42,6 +46,8 @@ fn request_method_from_file(path: &Path) -> Option<ApiMethods> {
         .map(|config| config.method)
 }
 
+/// Converts a file or directory into a collection item, recursively loading children.
+/// Example output: `Some(ApiCollectionItem::Request { name: "users", method: Some(ApiMethods::GET), path: "users" })`.
 fn build_collection_item(
     collections_path: &Path,
     path: &Path,
@@ -91,6 +97,8 @@ fn build_collection_item(
     }
 }
 
+/// Lists all request collections under a path as sorted collection items.
+/// Example output: `Ok(vec![ApiCollectionItem::Folder { name: "users", children: [...], is_expanded: true }])`.
 pub fn list_collections_from_path(collections_path: &Path) -> io::Result<Vec<ApiCollectionItem>> {
     let mut items = Vec::new();
     let mut entries: Vec<_> = fs::read_dir(collections_path)?
@@ -118,6 +126,8 @@ mod tests {
     use crate::types::request_type::ApiMethods;
     use std::{env, fs};
 
+    /// Verifies request items include the HTTP method parsed from their TOML file.
+    /// Example output: the parsed request method is `Some(ApiMethods::HEAD)`.
     #[test]
     fn list_collections_uses_api_method_for_request_items() {
         let collections_path =

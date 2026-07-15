@@ -2,10 +2,7 @@ use std::{env, io};
 
 use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::{
-    DefaultTerminal, Frame,
-    layout::{Constraint, Layout},
-    symbols::border,
-    widgets::Block,
+    DefaultTerminal, Frame, layout::{Constraint, Layout}, symbols::border, widgets::{Block, ListState}
 };
 
 use crate::{
@@ -14,7 +11,7 @@ use crate::{
         api_config_ui::api_config_ui, help_section_ui::help_section_ui, response_ui::response_ui,
         sidebar_ui::sidebar_ui,
     },
-    types::request_type::{ApiMethods, RequestBody, RequestConfig},
+    types::request_type::{ApiMethods, Config, RequestBody, RequestConfig},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -30,6 +27,9 @@ pub struct App {
     collections: Vec<ApiCollectionItem>,
     hovered_panel: Panels,
     is_panel_focused: bool,
+
+    // App state for sidebar
+    sidebar_state: ListState,
 
     // App states for config
     selected_api_config_file: Option<RequestConfig>,
@@ -94,7 +94,7 @@ impl App {
         Ok(())
     }
 
-    fn draw(&self, frame: &mut Frame) {
+    fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
         let sidebar_is_hovered = self.hovered_panel == Panels::Sidebar;
         let config_is_hovered = self.hovered_panel == Panels::Config;
@@ -139,10 +139,7 @@ impl App {
             response_is_hovered && self.is_panel_focused,
         );
 
-        help_section_ui(
-            frame,
-            help_section
-            );
+        help_section_ui(frame, help_section);
     }
 }
 
@@ -151,11 +148,16 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let collection_path = current_path.join(".rivet/collections");
     let collections = list_collections_from_path(&collection_path)?;
 
+    let mut sidebar_state = ListState::default();
+    sidebar_state.select(Some(0));
+
     let mut app = App {
         run_app: true,
         collections,
         hovered_panel: Panels::Sidebar,
         is_panel_focused: false,
+
+        sidebar_state,
 
         // TODO: Currently using a mock request config
         selected_api_config_file: Some(RequestConfig {
@@ -180,7 +182,7 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
 }"#,
                 ),
             }),
-            config: None,
+            config: Some(Config { timeout: 30 }),
         }),
     };
     app.run(terminal)

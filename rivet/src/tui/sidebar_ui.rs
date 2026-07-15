@@ -1,14 +1,10 @@
 use ratatui::{
-    Frame,
-    layout::Rect,
-    style::{Color, Style, Stylize},
-    symbols::border,
-    text::{Line, Span},
-    widgets::{Block, List, ListItem},
+    Frame, layout::Rect, style::{Color, Style, Stylize}, symbols::border, text::{Line, Span}, widgets::{Block, List, ListItem, ListState},
 };
 
 use crate::{actions::ls_action::ApiCollectionItem, types::request_type::ApiMethods};
 
+/// Gets the prefix String for the folder/request in order to render a clear folder structure
 fn tree_prefix(ancestors: &[bool], is_last: bool) -> String {
     let mut prefix = String::new();
 
@@ -42,11 +38,17 @@ fn method_span(method: Option<ApiMethods>) -> Span<'static> {
     }
 }
 
+/// Returns a flat list of Ratatui ListItems that contains renderable text
+/// for each row in the sidebar.
+///
+/// This will give a clear folder structure in the sidebar when iterated to form the sidebar widget
 fn collection_items<'a>(items: &'a [ApiCollectionItem], ancestors: &[bool]) -> Vec<ListItem<'a>> {
     let mut list_items = Vec::new();
 
     for (index, item) in items.iter().enumerate() {
         let is_last = index == items.len() - 1;
+
+        // Returns a prefix string for the folder structure
         let prefix = tree_prefix(ancestors, is_last);
 
         match item {
@@ -90,6 +92,9 @@ pub fn sidebar_ui(
     is_focused: bool,
 ) {
     let items = collection_items(collections, &[]);
+    let mut state = ListState::default();
+    state.select(Some(0));
+
     let border_style = if is_hovered {
         Style::default().fg(Color::Blue)
     } else {
@@ -105,7 +110,12 @@ pub fn sidebar_ui(
             } else {
                 border::ROUNDED
             }),
-    );
+    )
+        .highlight_style(Style::default()
+            .bg(Color::Indexed(237)) 
+            .fg(Color::White))
+        .highlight_symbol("> ")
+        .repeat_highlight_symbol(true);
 
-    frame.render_widget(sidebar_widget, area);
+    frame.render_stateful_widget(sidebar_widget, area, &mut state);
 }
