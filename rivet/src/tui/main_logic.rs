@@ -108,6 +108,48 @@ fn collection_items(
     (list_items, sidebar_rows)
 }
 
+/// This function handles Enter key being pressed in the sidebar
+fn sidebar_ui_handle_enter(app: &mut App) {
+    let Some(entered_idx) = app.sidebar_state.selected() else {
+        return;
+    };
+
+    let Some(row) = app.sidebar_rows
+        .get(entered_idx)
+    else {
+        return;
+    };
+    
+    let Some((&selected_idx, parent_indices)) = row.path.split_last() else {
+        return;
+    };
+
+    let mut items = &mut app.collections;
+
+    for &index in parent_indices {
+        let Some(ApiCollectionItem::Folder { children, ..}) = items.get_mut(index) else {
+            return;
+        };
+
+        items = children;
+    }
+
+    let Some(chosen_item) = items.get_mut(selected_idx) else {
+        return;
+    };
+
+    match chosen_item {
+        ApiCollectionItem::Folder { is_expanded, .. } => {
+            *is_expanded = !*is_expanded;
+            app.refresh_collection_items();
+        }
+
+        ApiCollectionItem::Request { name, method, path } => {
+
+        }
+    }
+}
+
 struct SidebarRow {
     /// Indices from the root collection slice through each folder's `children` slice.
     path: Vec<usize>,
@@ -160,20 +202,9 @@ impl App {
         }
 
         match key_event.code {
-            // When the Enter key is recorded
-            KeyCode::Enter => {
-                // Before changing the is focused flag to true, we check if it is already true
-                // which means that we are already in a panel and we have
-                // to do panel-specific control
-                #[allow(unused)] // REMOVE LATER
-                if (self.is_panel_focused == true) {
-                    // TODO: Enter when a panel is focused
-                    // for e.g. sidebar should toggle folder or set the selected request file
-                } else {
-                    // Change the is panel focused flag to true
-                    self.is_panel_focused = true;
-                }
-
+            // When the Enter key is recorded and there is no focused panel
+            KeyCode::Enter if !self.is_panel_focused => {
+                self.is_panel_focused = true;
                 return Ok(());
             }
             KeyCode::Esc => {
@@ -184,30 +215,27 @@ impl App {
         }
 
         // Change hovered panel through movement keys if no panel is focused
-        self.hovered_panel = {
-            match self.is_panel_focused {
-                false => match key_event.code {
-                    KeyCode::Char('h') => match self.hovered_panel {
-                        Panels::Config => Panels::Sidebar,
-                        section => section,
-                    },
-                    KeyCode::Char('l') => match self.hovered_panel {
-                        Panels::Sidebar => Panels::Config,
-                        section => section,
-                    },
-                    KeyCode::Char('j') => match self.hovered_panel {
-                        Panels::Sidebar | Panels::Config => Panels::Response,
-                        section => section,
-                    },
-                    KeyCode::Char('k') => match self.hovered_panel {
-                        Panels::Response => Panels::Config,
-                        section => section,
-                    },
-                    _ => self.hovered_panel,
+        if !self.is_panel_focused {
+            self.hovered_panel = match key_event.code {
+                KeyCode::Char('h') => match self.hovered_panel {
+                    Panels::Config => Panels::Sidebar,
+                    section => section,
                 },
-                true => self.hovered_panel,
-            }
-        };
+                KeyCode::Char('l') => match self.hovered_panel {
+                    Panels::Sidebar => Panels::Config,
+                    section => section,
+                },
+                KeyCode::Char('j') => match self.hovered_panel {
+                    Panels::Sidebar | Panels::Config => Panels::Response,
+                    section => section,
+                },
+                KeyCode::Char('k') => match self.hovered_panel {
+                    Panels::Response => Panels::Config,
+                    section => section,
+                },
+                _ => self.hovered_panel,
+            };
+        }
 
         // If a panel is focused, we run the required function block
         // for the hovered + focused panel
@@ -233,6 +261,9 @@ impl App {
                                 .map_or(0, |idx| idx.saturating_sub(1));
                             self.sidebar_state.select(Some(previous_idx));
                         }
+                    }
+                    KeyCode::Enter => {
+                        sidebar_ui_handle_enter(self);
                     }
                     _ => {}
                 },
