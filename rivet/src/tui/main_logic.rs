@@ -2,7 +2,10 @@ use std::{env, io};
 
 use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::{
-    DefaultTerminal, Frame, layout::{Constraint, Layout}, symbols::border, widgets::{Block, ListState}
+    DefaultTerminal, Frame,
+    layout::{Constraint, Layout},
+    symbols::border,
+    widgets::{Block, ListState},
 };
 
 use crate::{
@@ -46,37 +49,79 @@ impl App {
         }
 
         match key_event.code {
+            // When the Enter key is recorded
             KeyCode::Enter => {
-                self.is_panel_focused = true;
+                // Before changing the is focused flag to true, we check if it is already true
+                // which means that we are already in a panel and we have
+                // to do panel-specific control
+                #[allow(unused)] // REMOVE LATER
+                if (self.is_panel_focused == true) {
+                    // TODO: Enter when a panel is focused
+                    // for e.g. sidebar should toggle folder or set the selected request file
+                } else {
+                    // Change the is panel focused flag to true
+                    self.is_panel_focused = true;
+                }
+
                 return Ok(());
             }
             KeyCode::Esc => {
                 self.is_panel_focused = false;
                 return Ok(());
             }
-            _ if self.is_panel_focused => return Ok(()),
             _ => {}
         }
 
-        self.hovered_panel = match key_event.code {
-            KeyCode::Char('h') => match self.hovered_panel {
-                Panels::Config => Panels::Sidebar,
-                section => section,
-            },
-            KeyCode::Char('l') => match self.hovered_panel {
-                Panels::Sidebar => Panels::Config,
-                section => section,
-            },
-            KeyCode::Char('j') => match self.hovered_panel {
-                Panels::Sidebar | Panels::Config => Panels::Response,
-                section => section,
-            },
-            KeyCode::Char('k') => match self.hovered_panel {
-                Panels::Response => Panels::Config,
-                section => section,
-            },
-            _ => self.hovered_panel,
+        // Change hovered panel through movement keys if no panel is focused
+        self.hovered_panel = {
+            match self.is_panel_focused {
+                false => match key_event.code {
+                    KeyCode::Char('h') => match self.hovered_panel {
+                        Panels::Config => Panels::Sidebar,
+                        section => section,
+                    },
+                    KeyCode::Char('l') => match self.hovered_panel {
+                        Panels::Sidebar => Panels::Config,
+                        section => section,
+                    },
+                    KeyCode::Char('j') => match self.hovered_panel {
+                        Panels::Sidebar | Panels::Config => Panels::Response,
+                        section => section,
+                    },
+                    KeyCode::Char('k') => match self.hovered_panel {
+                        Panels::Response => Panels::Config,
+                        section => section,
+                    },
+                    _ => self.hovered_panel,
+                },
+                true => self.hovered_panel,
+            }
         };
+
+        // If a panel is focused, we run the required function block
+        // for the hovered + focused panel
+        if self.is_panel_focused {
+            match self.hovered_panel {
+                // If focused panel is the sidebar
+                Panels::Sidebar => match key_event.code {
+                    // j and k keys go up and down the list
+                    KeyCode::Char('j') => {
+                        if let Some(curr_idx) = self.sidebar_state.selected() {
+                            self.sidebar_state.select(Some(curr_idx + 1));
+                        } else {
+                            self.sidebar_state.select(Some(0));
+                        }
+                    },
+                    KeyCode::Char('k') => {
+                        if let Some(curr_idx) = self.sidebar_state.selected() {
+                            self.sidebar_state.select(Some(curr_idx.saturating_sub(1)));
+                        }  
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
 
         Ok(())
     }
@@ -120,6 +165,7 @@ impl App {
             frame,
             sidebar_area,
             &self.collections,
+            &mut self.sidebar_state,
             sidebar_is_hovered,
             sidebar_is_hovered && self.is_panel_focused,
         );

@@ -88,12 +88,12 @@ pub fn sidebar_ui(
     frame: &mut Frame,
     area: Rect,
     collections: &[ApiCollectionItem],
+    mut sidebar_state: &mut ListState,
     is_hovered: bool,
     is_focused: bool,
 ) {
+    // Get Ratatui list items of renderable Ratatui line text with appropriate prefix icon and name
     let items = collection_items(collections, &[]);
-    let mut state = ListState::default();
-    state.select(Some(0));
 
     let border_style = if is_hovered {
         Style::default().fg(Color::Blue)
@@ -101,15 +101,17 @@ pub fn sidebar_ui(
         Style::default()
     };
 
+    let border_set = if is_focused {
+        border::DOUBLE
+    } else {
+        border::ROUNDED
+    };
+
     let sidebar_widget = List::new(items).block(
         Block::bordered()
             .border_style(border_style)
             .title_top(Line::from(" <●> Rivet APIs ").bold().left_aligned())
-            .border_set(if is_focused {
-                border::DOUBLE
-            } else {
-                border::ROUNDED
-            }),
+            .border_set(border_set),
     )
         .highlight_style(Style::default()
             .bg(Color::Indexed(237)) 
@@ -117,5 +119,5 @@ pub fn sidebar_ui(
         .highlight_symbol("> ")
         .repeat_highlight_symbol(true);
 
-    frame.render_stateful_widget(sidebar_widget, area, &mut state);
+    frame.render_stateful_widget(sidebar_widget, area, &mut sidebar_state);
 }
