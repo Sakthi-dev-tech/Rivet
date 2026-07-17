@@ -4,8 +4,10 @@ use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Layout},
+    style::Stylize,
     symbols::border,
-    widgets::{Block, ListState},
+    text::{Line, Span},
+    widgets::{Block, ListItem, ListState},
 };
 
 use crate::{
@@ -24,6 +26,69 @@ enum Panels {
     Response,
 }
 
+/// Gets the prefix String for the folder/request in order to render a clear folder structure
+fn tree_prefix(ancestors: &[bool], is_last: bool) -> String {
+    let mut prefix = String::new();
+
+    for &ancestor_is_last in ancestors {
+        prefix.push_str(if ancestor_is_last { "   " } else { "│  " });
+    }
+
+    prefix.push_str(if is_last { "└─ " } else { "├─ " });
+    prefix
+}
+
+fn method_span(method: Option<ApiMethods>) -> Span<'static> {
+    match method {
+        Some(ApiMethods::GET) => Span::from(" GET ").black().on_green(),
+        Some(ApiMethods::POST) => Span::from(" POST ").black().on_yellow(),
+        Some(ApiMethods::PUT) => Span::from(" PUT ").black().on_blue(),
+        Some(ApiMethods::PATCH) => Span::from(" PATCH ").black().on_magenta(),
+        Some(ApiMethods::DELETE) => Span::from(" DELETE ").black().on_red(),
+        Some(ApiMethods::HEAD) => Span::from(" HEAD ").black().on_cyan(),
+        Some(ApiMethods::OPTIONS) => Span::from(" OPTIONS ").black().on_white(),
+        None => Span::from(" Unknown ").black().on_dark_gray(),
+    }
+}
+
+/// Flattens the collection tree into owned, renderable sidebar rows.
+fn collection_items(items: &[ApiCollectionItem], ancestors: &[bool]) -> Vec<ListItem<'static>> {
+    let mut list_items = Vec::new();
+
+    for (index, item) in items.iter().enumerate() {
+        let is_last = index == items.len() - 1;
+        let prefix = tree_prefix(ancestors, is_last);
+
+        match item {
+            ApiCollectionItem::Folder {
+                name,
+                children,
+                is_expanded,
+            } => {
+                let icon = if *is_expanded { "\u{f07c}" } else { "\u{f07b}" };
+                list_items.push(ListItem::new(
+                    Line::from(format!("{prefix}{icon} {name}")).yellow().bold(),
+                ));
+
+                if *is_expanded {
+                    let mut child_ancestors = ancestors.to_vec();
+                    child_ancestors.push(is_last);
+                    list_items.extend(collection_items(children, &child_ancestors));
+                }
+            }
+            ApiCollectionItem::Request { name, method, path } => {
+                list_items.push(ListItem::new(Line::from(vec![
+                    Span::raw(prefix),
+                    method_span(*method),
+                    Span::raw(format!(" {name} {path}")),
+                ])));
+            }
+        }
+    }
+
+    list_items
+}
+
 pub struct App {
     // General App States
     run_app: bool,
@@ -32,6 +97,7 @@ pub struct App {
     is_panel_focused: bool,
 
     // App state for sidebar
+    collection_items: Vec<ListItem<'static>>,
     sidebar_state: ListState,
 
     // App states for config
@@ -39,6 +105,21 @@ pub struct App {
 }
 
 impl App {
+    fn refresh_collection_items(&mut self) {
+        self.collection_items = collection_items(&self.collections, &[]);
+        self.sidebar_state
+            .select(if self.collection_items.is_empty() {
+                None
+            } else {
+                Some(
+                    self.sidebar_state
+                        .selected()
+                        .unwrap_or(0)
+                        .min(self.collection_items.len() - 1),
+                )
+            });
+    }
+
     fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) -> io::Result<()> {
         if key_event.kind != KeyEventKind::Press {
             return Ok(());
@@ -106,16 +187,22 @@ impl App {
                 Panels::Sidebar => match key_event.code {
                     // j and k keys go up and down the list
                     KeyCode::Char('j') => {
-                        if let Some(curr_idx) = self.sidebar_state.selected() {
-                            self.sidebar_state.select(Some(curr_idx + 1));
-                        } else {
-                            self.sidebar_state.select(Some(0));
+                        if let Some(last_idx) = self.collection_items.len().checked_sub(1) {
+                            let next_idx = self
+                                .sidebar_state
+                                .selected()
+                                .map_or(0, |idx| idx.saturating_add(1).min(last_idx));
+                            self.sidebar_state.select(Some(next_idx));
                         }
-                    },
+                    }
                     KeyCode::Char('k') => {
-                        if let Some(curr_idx) = self.sidebar_state.selected() {
-                            self.sidebar_state.select(Some(curr_idx.saturating_sub(1)));
-                        }  
+                        if !self.collection_items.is_empty() {
+                            let previous_idx = self
+                                .sidebar_state
+                                .selected()
+                                .map_or(0, |idx| idx.saturating_sub(1));
+                            self.sidebar_state.select(Some(previous_idx));
+                        }
                     }
                     _ => {}
                 },
@@ -164,7 +251,7 @@ impl App {
         sidebar_ui(
             frame,
             sidebar_area,
-            &self.collections,
+            &self.collection_items,
             &mut self.sidebar_state,
             sidebar_is_hovered,
             sidebar_is_hovered && self.is_panel_focused,
@@ -194,16 +281,14 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let collection_path = current_path.join(".rivet/collections");
     let collections = list_collections_from_path(&collection_path)?;
 
-    let mut sidebar_state = ListState::default();
-    sidebar_state.select(Some(0));
-
     let mut app = App {
         run_app: true,
         collections,
         hovered_panel: Panels::Sidebar,
         is_panel_focused: false,
 
-        sidebar_state,
+        collection_items: Vec::new(),
+        sidebar_state: ListState::default(),
 
         // TODO: Currently using a mock request config
         selected_api_config_file: Some(RequestConfig {
@@ -231,5 +316,6 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
             config: Some(Config { timeout: 30 }),
         }),
     };
+    app.refresh_collection_items();
     app.run(terminal)
 }
