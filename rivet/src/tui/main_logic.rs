@@ -26,6 +26,11 @@ enum Panels {
     Response,
 }
 
+/*
+ * =================================================================
+ * FUNCTIONS FOR SIDEBAR LOGIC
+ * =================================================================
+ */
 /// Gets the prefix String for the folder/request in order to render a clear folder structure
 fn tree_prefix(ancestors: &[bool], is_last: bool) -> String {
     let mut prefix = String::new();
@@ -51,13 +56,24 @@ fn method_span(method: Option<ApiMethods>) -> Span<'static> {
     }
 }
 
-/// Flattens the collection tree into owned, renderable sidebar rows.
-fn collection_items(items: &[ApiCollectionItem], ancestors: &[bool]) -> Vec<ListItem<'static>> {
+/// Flattens the collection tree into owned, renderable sidebar rows and matching paths.
+fn collection_items(
+    items: &[ApiCollectionItem],
+    ancestors: &[bool],
+    parent_path: &[usize],
+) -> (Vec<ListItem<'static>>, Vec<SidebarRow>) {
     let mut list_items = Vec::new();
+    let mut sidebar_rows = Vec::new();
 
     for (index, item) in items.iter().enumerate() {
         let is_last = index == items.len() - 1;
         let prefix = tree_prefix(ancestors, is_last);
+        let mut item_path = parent_path.to_vec();
+        item_path.push(index);
+
+        sidebar_rows.push(SidebarRow {
+            path: item_path.clone(),
+        });
 
         match item {
             ApiCollectionItem::Folder {
@@ -73,7 +89,10 @@ fn collection_items(items: &[ApiCollectionItem], ancestors: &[bool]) -> Vec<List
                 if *is_expanded {
                     let mut child_ancestors = ancestors.to_vec();
                     child_ancestors.push(is_last);
-                    list_items.extend(collection_items(children, &child_ancestors));
+                    let (child_items, child_rows) =
+                        collection_items(children, &child_ancestors, &item_path);
+                    list_items.extend(child_items);
+                    sidebar_rows.extend(child_rows);
                 }
             }
             ApiCollectionItem::Request { name, method, path } => {
@@ -86,7 +105,12 @@ fn collection_items(items: &[ApiCollectionItem], ancestors: &[bool]) -> Vec<List
         }
     }
 
-    list_items
+    (list_items, sidebar_rows)
+}
+
+struct SidebarRow {
+    /// Indices from the root collection slice through each folder's `children` slice.
+    path: Vec<usize>,
 }
 
 pub struct App {
@@ -98,6 +122,7 @@ pub struct App {
 
     // App state for sidebar
     collection_items: Vec<ListItem<'static>>,
+    sidebar_rows: Vec<SidebarRow>, // Index of row => path to the file/folder
     sidebar_state: ListState,
 
     // App states for config
@@ -106,18 +131,23 @@ pub struct App {
 
 impl App {
     fn refresh_collection_items(&mut self) {
-        self.collection_items = collection_items(&self.collections, &[]);
-        self.sidebar_state
-            .select(if self.collection_items.is_empty() {
-                None
-            } else {
-                Some(
-                    self.sidebar_state
-                        .selected()
-                        .unwrap_or(0)
-                        .min(self.collection_items.len() - 1),
-                )
-            });
+        let (collection_items, sidebar_rows) = collection_items(&self.collections, &[], &[]);
+        debug_assert_eq!(collection_items.len(), sidebar_rows.len());
+        debug_assert!(sidebar_rows.iter().all(|row| !row.path.is_empty()));
+        let row_count = collection_items.len();
+
+        self.collection_items = collection_items;
+        self.sidebar_rows = sidebar_rows;
+        self.sidebar_state.select(if row_count == 0 {
+            None
+        } else {
+            Some(
+                self.sidebar_state
+                    .selected()
+                    .unwrap_or(0)
+                    .min(row_count - 1),
+            )
+        });
     }
 
     fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) -> io::Result<()> {
@@ -288,6 +318,7 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
         is_panel_focused: false,
 
         collection_items: Vec::new(),
+        sidebar_rows: Vec::new(),
         sidebar_state: ListState::default(),
 
         // TODO: Currently using a mock request config
