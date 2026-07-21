@@ -111,6 +111,10 @@ pub fn api_config_ui(
             let body = Paragraph::new(body_content).block(body_block);
             frame.render_widget(body, body_area);
         }
-        None => {}
+        None => frame.render_widget(
+            Paragraph::new("No API request selected. Select one from the sidebar.")
+                .block(Block::bordered().border_set(border::ROUNDED)),
+            area,
+        ),
     }
 }
