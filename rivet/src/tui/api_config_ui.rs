@@ -12,11 +12,12 @@ use crate::types::request_type::{ApiMethods, RequestConfig};
 pub fn api_config_ui(
     frame: &mut Frame,
     area: Rect,
-    _current_file: &Option<RequestConfig>,
+    current_file: &Option<RequestConfig>,
+    current_path: Option<&str>,
     is_hovered: bool,
     is_focused: bool,
 ) {
-    match _current_file {
+    match current_file {
         Some(request_config) => {
             let border_style = if is_hovered {
                 Style::default().fg(Color::Blue)
@@ -57,7 +58,11 @@ pub fn api_config_ui(
 
             let block = Block::bordered()
                 .border_style(border_style)
-                .title_top(Line::from(" users/create-user ").bold().left_aligned())
+                .title_top(
+                    Line::from(format!(" {} ", current_path.unwrap_or("Request")))
+                        .bold()
+                        .left_aligned(),
+                )
                 .title_top(Line::from(" Env: .env ").blue().right_aligned())
                 .title_top(Line::from(" [saved] ").green().right_aligned())
                 .border_set(if is_focused {

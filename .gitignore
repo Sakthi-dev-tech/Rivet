@@ -3,6 +3,19 @@ build/
 dist/
 .env
 
-rivet/.rivet/
+# Ignore local Rivet state, but retain the bundled sample request collection.
+rivet/.rivet/*
+!rivet/.rivet/collections/
+rivet/.rivet/collections/*
+!rivet/.rivet/collections/auth/
+rivet/.rivet/collections/auth/*
+!rivet/.rivet/collections/auth/bearer.toml
+!rivet/.rivet/collections/test/
+rivet/.rivet/collections/test/*
+!rivet/.rivet/collections/test/zget.toml
+!rivet/.rivet/collections/test/testnested/
+rivet/.rivet/collections/test/testnested/*
+!rivet/.rivet/collections/test/testnested/get.toml
 
 PLAN.md
+.rivet

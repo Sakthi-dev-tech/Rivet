@@ -1,4 +1,4 @@
-use std::{env, io};
+use std::{env, fs, io, path::PathBuf};
 
 use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::{
@@ -16,7 +16,7 @@ use crate::{
         api_config_ui::api_config_ui, help_section_ui::help_section_ui, response_ui::response_ui,
         sidebar_ui::sidebar_ui,
     },
-    types::request_type::{ApiMethods, Config, RequestBody, RequestConfig},
+    types::request_type::{ApiMethods, RequestConfig},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -114,12 +114,10 @@ fn sidebar_ui_handle_enter(app: &mut App) {
         return;
     };
 
-    let Some(row) = app.sidebar_rows
-        .get(entered_idx)
-    else {
+    let Some(row) = app.sidebar_rows.get(entered_idx) else {
         return;
     };
-    
+
     let Some((&selected_idx, parent_indices)) = row.path.split_last() else {
         return;
     };
@@ -127,7 +125,7 @@ fn sidebar_ui_handle_enter(app: &mut App) {
     let mut items = &mut app.collections;
 
     for &index in parent_indices {
-        let Some(ApiCollectionItem::Folder { children, ..}) = items.get_mut(index) else {
+        let Some(ApiCollectionItem::Folder { children, .. }) = items.get_mut(index) else {
             return;
         };
 
@@ -144,8 +142,19 @@ fn sidebar_ui_handle_enter(app: &mut App) {
             app.refresh_collection_items();
         }
 
-        ApiCollectionItem::Request { name, method, path } => {
+        ApiCollectionItem::Request { path, .. } => {
+            let request_path = app.collection_path.join(format!("{path}.toml"));
 
+            let Ok(request_str) = fs::read_to_string(request_path) else {
+                panic!("Cannot read selected file!")
+            };
+
+            let request_config: RequestConfig = toml::from_str(&request_str).unwrap_or_else(|_| {
+                panic!("Format of file is wrong! Follow the given format for the TOML file!")
+            });
+
+            app.selected_api_config_path = Some(path.clone());
+            app.selected_api_config_file = Some(request_config);
         }
     }
 }
@@ -159,6 +168,7 @@ pub struct App {
     // General App States
     run_app: bool,
     collections: Vec<ApiCollectionItem>,
+    collection_path: PathBuf,
     hovered_panel: Panels,
     is_panel_focused: bool,
 
@@ -168,10 +178,28 @@ pub struct App {
     sidebar_state: ListState,
 
     // App states for config
+    selected_api_config_path: Option<String>,
     selected_api_config_file: Option<RequestConfig>,
 }
 
 impl App {
+    fn new(collection_path: PathBuf, collections: Vec<ApiCollectionItem>) -> Self {
+        let mut app = Self {
+            run_app: true,
+            collections,
+            collection_path,
+            hovered_panel: Panels::Sidebar,
+            is_panel_focused: false,
+            collection_items: Vec::new(),
+            sidebar_rows: Vec::new(),
+            sidebar_state: ListState::default(),
+            selected_api_config_path: None,
+            selected_api_config_file: None,
+        };
+        app.refresh_collection_items();
+        app
+    }
+
     fn refresh_collection_items(&mut self) {
         let (collection_items, sidebar_rows) = collection_items(&self.collections, &[], &[]);
         debug_assert_eq!(collection_items.len(), sidebar_rows.len());
@@ -322,6 +350,7 @@ impl App {
             frame,
             config_area,
             &self.selected_api_config_file,
+            self.selected_api_config_path.as_deref(),
             config_is_hovered,
             config_is_hovered && self.is_panel_focused,
         );
@@ -342,42 +371,5 @@ pub fn tui_app(terminal: &mut DefaultTerminal) -> io::Result<()> {
     let collection_path = current_path.join(".rivet/collections");
     let collections = list_collections_from_path(&collection_path)?;
 
-    let mut app = App {
-        run_app: true,
-        collections,
-        hovered_panel: Panels::Sidebar,
-        is_panel_focused: false,
-
-        collection_items: Vec::new(),
-        sidebar_rows: Vec::new(),
-        sidebar_state: ListState::default(),
-
-        // TODO: Currently using a mock request config
-        selected_api_config_file: Some(RequestConfig {
-            method: ApiMethods::HEAD,
-            url: String::from("www.example.com"),
-            params: None,
-            auth: None,
-            headers: None,
-            body: Some(RequestBody {
-                content: String::from(
-                    r#"{
-  "username": "johndoe",
-  "email": "john.doe@example.com",
-  "age": 28,
-  "is_active": true,
-  "skills": ["JavaScript", "Python", "SQL"],
-  "address": {
-    "street": "123 Main Street",
-    "city": "Singapore",
-    "zipcode": "730000"
-  }
-}"#,
-                ),
-            }),
-            config: Some(Config { timeout: 30 }),
-        }),
-    };
-    app.refresh_collection_items();
-    app.run(terminal)
+    App::new(collection_path, collections).run(terminal)
 }
